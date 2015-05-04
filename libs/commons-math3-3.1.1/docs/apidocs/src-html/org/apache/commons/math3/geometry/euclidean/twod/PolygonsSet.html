@@ -1,0 +1,931 @@
+<HTML>
+<BODY BGCOLOR="white">
+<PRE>
+<FONT color="green">001</FONT>    /*<a name="line.1"></a>
+<FONT color="green">002</FONT>     * Licensed to the Apache Software Foundation (ASF) under one or more<a name="line.2"></a>
+<FONT color="green">003</FONT>     * contributor license agreements.  See the NOTICE file distributed with<a name="line.3"></a>
+<FONT color="green">004</FONT>     * this work for additional information regarding copyright ownership.<a name="line.4"></a>
+<FONT color="green">005</FONT>     * The ASF licenses this file to You under the Apache License, Version 2.0<a name="line.5"></a>
+<FONT color="green">006</FONT>     * (the "License"); you may not use this file except in compliance with<a name="line.6"></a>
+<FONT color="green">007</FONT>     * the License.  You may obtain a copy of the License at<a name="line.7"></a>
+<FONT color="green">008</FONT>     *<a name="line.8"></a>
+<FONT color="green">009</FONT>     *      http://www.apache.org/licenses/LICENSE-2.0<a name="line.9"></a>
+<FONT color="green">010</FONT>     *<a name="line.10"></a>
+<FONT color="green">011</FONT>     * Unless required by applicable law or agreed to in writing, software<a name="line.11"></a>
+<FONT color="green">012</FONT>     * distributed under the License is distributed on an "AS IS" BASIS,<a name="line.12"></a>
+<FONT color="green">013</FONT>     * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.<a name="line.13"></a>
+<FONT color="green">014</FONT>     * See the License for the specific language governing permissions and<a name="line.14"></a>
+<FONT color="green">015</FONT>     * limitations under the License.<a name="line.15"></a>
+<FONT color="green">016</FONT>     */<a name="line.16"></a>
+<FONT color="green">017</FONT>    package org.apache.commons.math3.geometry.euclidean.twod;<a name="line.17"></a>
+<FONT color="green">018</FONT>    <a name="line.18"></a>
+<FONT color="green">019</FONT>    import java.util.ArrayList;<a name="line.19"></a>
+<FONT color="green">020</FONT>    import java.util.Collection;<a name="line.20"></a>
+<FONT color="green">021</FONT>    import java.util.List;<a name="line.21"></a>
+<FONT color="green">022</FONT>    <a name="line.22"></a>
+<FONT color="green">023</FONT>    import org.apache.commons.math3.exception.MathInternalError;<a name="line.23"></a>
+<FONT color="green">024</FONT>    import org.apache.commons.math3.geometry.euclidean.oned.Euclidean1D;<a name="line.24"></a>
+<FONT color="green">025</FONT>    import org.apache.commons.math3.geometry.euclidean.oned.Interval;<a name="line.25"></a>
+<FONT color="green">026</FONT>    import org.apache.commons.math3.geometry.euclidean.oned.IntervalsSet;<a name="line.26"></a>
+<FONT color="green">027</FONT>    import org.apache.commons.math3.geometry.euclidean.oned.Vector1D;<a name="line.27"></a>
+<FONT color="green">028</FONT>    import org.apache.commons.math3.geometry.partitioning.AbstractRegion;<a name="line.28"></a>
+<FONT color="green">029</FONT>    import org.apache.commons.math3.geometry.partitioning.AbstractSubHyperplane;<a name="line.29"></a>
+<FONT color="green">030</FONT>    import org.apache.commons.math3.geometry.partitioning.BSPTree;<a name="line.30"></a>
+<FONT color="green">031</FONT>    import org.apache.commons.math3.geometry.partitioning.BSPTreeVisitor;<a name="line.31"></a>
+<FONT color="green">032</FONT>    import org.apache.commons.math3.geometry.partitioning.BoundaryAttribute;<a name="line.32"></a>
+<FONT color="green">033</FONT>    import org.apache.commons.math3.geometry.partitioning.Side;<a name="line.33"></a>
+<FONT color="green">034</FONT>    import org.apache.commons.math3.geometry.partitioning.SubHyperplane;<a name="line.34"></a>
+<FONT color="green">035</FONT>    import org.apache.commons.math3.geometry.partitioning.utilities.AVLTree;<a name="line.35"></a>
+<FONT color="green">036</FONT>    import org.apache.commons.math3.geometry.partitioning.utilities.OrderedTuple;<a name="line.36"></a>
+<FONT color="green">037</FONT>    import org.apache.commons.math3.util.FastMath;<a name="line.37"></a>
+<FONT color="green">038</FONT>    <a name="line.38"></a>
+<FONT color="green">039</FONT>    /** This class represents a 2D region: a set of polygons.<a name="line.39"></a>
+<FONT color="green">040</FONT>     * @version $Id: PolygonsSet.java 1422195 2012-12-15 06:45:18Z psteitz $<a name="line.40"></a>
+<FONT color="green">041</FONT>     * @since 3.0<a name="line.41"></a>
+<FONT color="green">042</FONT>     */<a name="line.42"></a>
+<FONT color="green">043</FONT>    public class PolygonsSet extends AbstractRegion&lt;Euclidean2D, Euclidean1D&gt; {<a name="line.43"></a>
+<FONT color="green">044</FONT>    <a name="line.44"></a>
+<FONT color="green">045</FONT>        /** Vertices organized as boundary loops. */<a name="line.45"></a>
+<FONT color="green">046</FONT>        private Vector2D[][] vertices;<a name="line.46"></a>
+<FONT color="green">047</FONT>    <a name="line.47"></a>
+<FONT color="green">048</FONT>        /** Build a polygons set representing the whole real line.<a name="line.48"></a>
+<FONT color="green">049</FONT>         */<a name="line.49"></a>
+<FONT color="green">050</FONT>        public PolygonsSet() {<a name="line.50"></a>
+<FONT color="green">051</FONT>            super();<a name="line.51"></a>
+<FONT color="green">052</FONT>        }<a name="line.52"></a>
+<FONT color="green">053</FONT>    <a name="line.53"></a>
+<FONT color="green">054</FONT>        /** Build a polygons set from a BSP tree.<a name="line.54"></a>
+<FONT color="green">055</FONT>         * &lt;p&gt;The leaf nodes of the BSP tree &lt;em&gt;must&lt;/em&gt; have a<a name="line.55"></a>
+<FONT color="green">056</FONT>         * {@code Boolean} attribute representing the inside status of<a name="line.56"></a>
+<FONT color="green">057</FONT>         * the corresponding cell (true for inside cells, false for outside<a name="line.57"></a>
+<FONT color="green">058</FONT>         * cells). In order to avoid building too many small objects, it is<a name="line.58"></a>
+<FONT color="green">059</FONT>         * recommended to use the predefined constants<a name="line.59"></a>
+<FONT color="green">060</FONT>         * {@code Boolean.TRUE} and {@code Boolean.FALSE}&lt;/p&gt;<a name="line.60"></a>
+<FONT color="green">061</FONT>         * @param tree inside/outside BSP tree representing the region<a name="line.61"></a>
+<FONT color="green">062</FONT>         */<a name="line.62"></a>
+<FONT color="green">063</FONT>        public PolygonsSet(final BSPTree&lt;Euclidean2D&gt; tree) {<a name="line.63"></a>
+<FONT color="green">064</FONT>            super(tree);<a name="line.64"></a>
+<FONT color="green">065</FONT>        }<a name="line.65"></a>
+<FONT color="green">066</FONT>    <a name="line.66"></a>
+<FONT color="green">067</FONT>        /** Build a polygons set from a Boundary REPresentation (B-rep).<a name="line.67"></a>
+<FONT color="green">068</FONT>         * &lt;p&gt;The boundary is provided as a collection of {@link<a name="line.68"></a>
+<FONT color="green">069</FONT>         * SubHyperplane sub-hyperplanes}. Each sub-hyperplane has the<a name="line.69"></a>
+<FONT color="green">070</FONT>         * interior part of the region on its minus side and the exterior on<a name="line.70"></a>
+<FONT color="green">071</FONT>         * its plus side.&lt;/p&gt;<a name="line.71"></a>
+<FONT color="green">072</FONT>         * &lt;p&gt;The boundary elements can be in any order, and can form<a name="line.72"></a>
+<FONT color="green">073</FONT>         * several non-connected sets (like for example polygons with holes<a name="line.73"></a>
+<FONT color="green">074</FONT>         * or a set of disjoint polyhedrons considered as a whole). In<a name="line.74"></a>
+<FONT color="green">075</FONT>         * fact, the elements do not even need to be connected together<a name="line.75"></a>
+<FONT color="green">076</FONT>         * (their topological connections are not used here). However, if the<a name="line.76"></a>
+<FONT color="green">077</FONT>         * boundary does not really separate an inside open from an outside<a name="line.77"></a>
+<FONT color="green">078</FONT>         * open (open having here its topological meaning), then subsequent<a name="line.78"></a>
+<FONT color="green">079</FONT>         * calls to the {@link<a name="line.79"></a>
+<FONT color="green">080</FONT>         * org.apache.commons.math3.geometry.partitioning.Region#checkPoint(org.apache.commons.math3.geometry.Vector)<a name="line.80"></a>
+<FONT color="green">081</FONT>         * checkPoint} method will not be meaningful anymore.&lt;/p&gt;<a name="line.81"></a>
+<FONT color="green">082</FONT>         * &lt;p&gt;If the boundary is empty, the region will represent the whole<a name="line.82"></a>
+<FONT color="green">083</FONT>         * space.&lt;/p&gt;<a name="line.83"></a>
+<FONT color="green">084</FONT>         * @param boundary collection of boundary elements, as a<a name="line.84"></a>
+<FONT color="green">085</FONT>         * collection of {@link SubHyperplane SubHyperplane} objects<a name="line.85"></a>
+<FONT color="green">086</FONT>         */<a name="line.86"></a>
+<FONT color="green">087</FONT>        public PolygonsSet(final Collection&lt;SubHyperplane&lt;Euclidean2D&gt;&gt; boundary) {<a name="line.87"></a>
+<FONT color="green">088</FONT>            super(boundary);<a name="line.88"></a>
+<FONT color="green">089</FONT>        }<a name="line.89"></a>
+<FONT color="green">090</FONT>    <a name="line.90"></a>
+<FONT color="green">091</FONT>        /** Build a parallellepipedic box.<a name="line.91"></a>
+<FONT color="green">092</FONT>         * @param xMin low bound along the x direction<a name="line.92"></a>
+<FONT color="green">093</FONT>         * @param xMax high bound along the x direction<a name="line.93"></a>
+<FONT color="green">094</FONT>         * @param yMin low bound along the y direction<a name="line.94"></a>
+<FONT color="green">095</FONT>         * @param yMax high bound along the y direction<a name="line.95"></a>
+<FONT color="green">096</FONT>         */<a name="line.96"></a>
+<FONT color="green">097</FONT>        public PolygonsSet(final double xMin, final double xMax,<a name="line.97"></a>
+<FONT color="green">098</FONT>                           final double yMin, final double yMax) {<a name="line.98"></a>
+<FONT color="green">099</FONT>            super(boxBoundary(xMin, xMax, yMin, yMax));<a name="line.99"></a>
+<FONT color="green">100</FONT>        }<a name="line.100"></a>
+<FONT color="green">101</FONT>    <a name="line.101"></a>
+<FONT color="green">102</FONT>        /** Build a polygon from a simple list of vertices.<a name="line.102"></a>
+<FONT color="green">103</FONT>         * &lt;p&gt;The boundary is provided as a list of points considering to<a name="line.103"></a>
+<FONT color="green">104</FONT>         * represent the vertices of a simple loop. The interior part of the<a name="line.104"></a>
+<FONT color="green">105</FONT>         * region is on the left side of this path and the exterior is on its<a name="line.105"></a>
+<FONT color="green">106</FONT>         * right side.&lt;/p&gt;<a name="line.106"></a>
+<FONT color="green">107</FONT>         * &lt;p&gt;This constructor does not handle polygons with a boundary<a name="line.107"></a>
+<FONT color="green">108</FONT>         * forming several disconnected paths (such as polygons with holes).&lt;/p&gt;<a name="line.108"></a>
+<FONT color="green">109</FONT>         * &lt;p&gt;For cases where this simple constructor applies, it is expected to<a name="line.109"></a>
+<FONT color="green">110</FONT>         * be numerically more robust than the {@link #PolygonsSet(Collection) general<a name="line.110"></a>
+<FONT color="green">111</FONT>         * constructor} using {@link SubHyperplane subhyperplanes}.&lt;/p&gt;<a name="line.111"></a>
+<FONT color="green">112</FONT>         * &lt;p&gt;If the list is empty, the region will represent the whole<a name="line.112"></a>
+<FONT color="green">113</FONT>         * space.&lt;/p&gt;<a name="line.113"></a>
+<FONT color="green">114</FONT>         * &lt;p&gt;<a name="line.114"></a>
+<FONT color="green">115</FONT>         * Polygons with thin pikes or dents are inherently difficult to handle because<a name="line.115"></a>
+<FONT color="green">116</FONT>         * they involve lines with almost opposite directions at some vertices. Polygons<a name="line.116"></a>
+<FONT color="green">117</FONT>         * whose vertices come from some physical measurement with noise are also<a name="line.117"></a>
+<FONT color="green">118</FONT>         * difficult because an edge that should be straight may be broken in lots of<a name="line.118"></a>
+<FONT color="green">119</FONT>         * different pieces with almost equal directions. In both cases, computing the<a name="line.119"></a>
+<FONT color="green">120</FONT>         * lines intersections is not numerically robust due to the almost 0 or almost<a name="line.120"></a>
+<FONT color="green">121</FONT>         * &amp;pi; angle. Such cases need to carefully adjust the {@code hyperplaneThickness}<a name="line.121"></a>
+<FONT color="green">122</FONT>         * parameter. A too small value would often lead to completely wrong polygons<a name="line.122"></a>
+<FONT color="green">123</FONT>         * with large area wrongly identified as inside or outside. Large values are<a name="line.123"></a>
+<FONT color="green">124</FONT>         * often much safer. As a rule of thumb, a value slightly below the size of the<a name="line.124"></a>
+<FONT color="green">125</FONT>         * most accurate detail needed is a good value for the {@code hyperplaneThickness}<a name="line.125"></a>
+<FONT color="green">126</FONT>         * parameter.<a name="line.126"></a>
+<FONT color="green">127</FONT>         * &lt;/p&gt;<a name="line.127"></a>
+<FONT color="green">128</FONT>         * @param hyperplaneThickness tolerance below which points are considered to<a name="line.128"></a>
+<FONT color="green">129</FONT>         * belong to the hyperplane (which is therefore more a slab)<a name="line.129"></a>
+<FONT color="green">130</FONT>         * @param vertices vertices of the simple loop boundary<a name="line.130"></a>
+<FONT color="green">131</FONT>         * @since 3.1<a name="line.131"></a>
+<FONT color="green">132</FONT>         */<a name="line.132"></a>
+<FONT color="green">133</FONT>        public PolygonsSet(final double hyperplaneThickness, final Vector2D ... vertices) {<a name="line.133"></a>
+<FONT color="green">134</FONT>            super(verticesToTree(hyperplaneThickness, vertices));<a name="line.134"></a>
+<FONT color="green">135</FONT>        }<a name="line.135"></a>
+<FONT color="green">136</FONT>    <a name="line.136"></a>
+<FONT color="green">137</FONT>        /** Create a list of hyperplanes representing the boundary of a box.<a name="line.137"></a>
+<FONT color="green">138</FONT>         * @param xMin low bound along the x direction<a name="line.138"></a>
+<FONT color="green">139</FONT>         * @param xMax high bound along the x direction<a name="line.139"></a>
+<FONT color="green">140</FONT>         * @param yMin low bound along the y direction<a name="line.140"></a>
+<FONT color="green">141</FONT>         * @param yMax high bound along the y direction<a name="line.141"></a>
+<FONT color="green">142</FONT>         * @return boundary of the box<a name="line.142"></a>
+<FONT color="green">143</FONT>         */<a name="line.143"></a>
+<FONT color="green">144</FONT>        private static Line[] boxBoundary(final double xMin, final double xMax,<a name="line.144"></a>
+<FONT color="green">145</FONT>                                          final double yMin, final double yMax) {<a name="line.145"></a>
+<FONT color="green">146</FONT>            final Vector2D minMin = new Vector2D(xMin, yMin);<a name="line.146"></a>
+<FONT color="green">147</FONT>            final Vector2D minMax = new Vector2D(xMin, yMax);<a name="line.147"></a>
+<FONT color="green">148</FONT>            final Vector2D maxMin = new Vector2D(xMax, yMin);<a name="line.148"></a>
+<FONT color="green">149</FONT>            final Vector2D maxMax = new Vector2D(xMax, yMax);<a name="line.149"></a>
+<FONT color="green">150</FONT>            return new Line[] {<a name="line.150"></a>
+<FONT color="green">151</FONT>                new Line(minMin, maxMin),<a name="line.151"></a>
+<FONT color="green">152</FONT>                new Line(maxMin, maxMax),<a name="line.152"></a>
+<FONT color="green">153</FONT>                new Line(maxMax, minMax),<a name="line.153"></a>
+<FONT color="green">154</FONT>                new Line(minMax, minMin)<a name="line.154"></a>
+<FONT color="green">155</FONT>            };<a name="line.155"></a>
+<FONT color="green">156</FONT>        }<a name="line.156"></a>
+<FONT color="green">157</FONT>    <a name="line.157"></a>
+<FONT color="green">158</FONT>        /** Build the BSP tree of a polygons set from a simple list of vertices.<a name="line.158"></a>
+<FONT color="green">159</FONT>         * &lt;p&gt;The boundary is provided as a list of points considering to<a name="line.159"></a>
+<FONT color="green">160</FONT>         * represent the vertices of a simple loop. The interior part of the<a name="line.160"></a>
+<FONT color="green">161</FONT>         * region is on the left side of this path and the exterior is on its<a name="line.161"></a>
+<FONT color="green">162</FONT>         * right side.&lt;/p&gt;<a name="line.162"></a>
+<FONT color="green">163</FONT>         * &lt;p&gt;This constructor does not handle polygons with a boundary<a name="line.163"></a>
+<FONT color="green">164</FONT>         * forming several disconnected paths (such as polygons with holes).&lt;/p&gt;<a name="line.164"></a>
+<FONT color="green">165</FONT>         * &lt;p&gt;For cases where this simple constructor applies, it is expected to<a name="line.165"></a>
+<FONT color="green">166</FONT>         * be numerically more robust than the {@link #PolygonsSet(Collection) general<a name="line.166"></a>
+<FONT color="green">167</FONT>         * constructor} using {@link SubHyperplane subhyperplanes}.&lt;/p&gt;<a name="line.167"></a>
+<FONT color="green">168</FONT>         * @param hyperplaneThickness tolerance below which points are consider to<a name="line.168"></a>
+<FONT color="green">169</FONT>         * belong to the hyperplane (which is therefore more a slab)<a name="line.169"></a>
+<FONT color="green">170</FONT>         * @param vertices vertices of the simple loop boundary<a name="line.170"></a>
+<FONT color="green">171</FONT>         * @return the BSP tree of the input vertices<a name="line.171"></a>
+<FONT color="green">172</FONT>         */<a name="line.172"></a>
+<FONT color="green">173</FONT>        private static BSPTree&lt;Euclidean2D&gt; verticesToTree(final double hyperplaneThickness,<a name="line.173"></a>
+<FONT color="green">174</FONT>                                                           final Vector2D ... vertices) {<a name="line.174"></a>
+<FONT color="green">175</FONT>    <a name="line.175"></a>
+<FONT color="green">176</FONT>            final int n = vertices.length;<a name="line.176"></a>
+<FONT color="green">177</FONT>            if (n == 0) {<a name="line.177"></a>
+<FONT color="green">178</FONT>                // the tree represents the whole space<a name="line.178"></a>
+<FONT color="green">179</FONT>                return new BSPTree&lt;Euclidean2D&gt;(Boolean.TRUE);<a name="line.179"></a>
+<FONT color="green">180</FONT>            }<a name="line.180"></a>
+<FONT color="green">181</FONT>    <a name="line.181"></a>
+<FONT color="green">182</FONT>            // build the vertices<a name="line.182"></a>
+<FONT color="green">183</FONT>            final Vertex[] vArray = new Vertex[n];<a name="line.183"></a>
+<FONT color="green">184</FONT>            for (int i = 0; i &lt; n; ++i) {<a name="line.184"></a>
+<FONT color="green">185</FONT>                vArray[i] = new Vertex(vertices[i]);<a name="line.185"></a>
+<FONT color="green">186</FONT>            }<a name="line.186"></a>
+<FONT color="green">187</FONT>    <a name="line.187"></a>
+<FONT color="green">188</FONT>            // build the edges<a name="line.188"></a>
+<FONT color="green">189</FONT>            List&lt;Edge&gt; edges = new ArrayList&lt;Edge&gt;();<a name="line.189"></a>
+<FONT color="green">190</FONT>            for (int i = 0; i &lt; n; ++i) {<a name="line.190"></a>
+<FONT color="green">191</FONT>    <a name="line.191"></a>
+<FONT color="green">192</FONT>                // get the endpoints of the edge<a name="line.192"></a>
+<FONT color="green">193</FONT>                final Vertex start = vArray[i];<a name="line.193"></a>
+<FONT color="green">194</FONT>                final Vertex end   = vArray[(i + 1) % n];<a name="line.194"></a>
+<FONT color="green">195</FONT>    <a name="line.195"></a>
+<FONT color="green">196</FONT>                // get the line supporting the edge, taking care not to recreate it<a name="line.196"></a>
+<FONT color="green">197</FONT>                // if it was already created earlier due to another edge being aligned<a name="line.197"></a>
+<FONT color="green">198</FONT>                // with the current one<a name="line.198"></a>
+<FONT color="green">199</FONT>                Line line = start.sharedLineWith(end);<a name="line.199"></a>
+<FONT color="green">200</FONT>                if (line == null) {<a name="line.200"></a>
+<FONT color="green">201</FONT>                    line = new Line(start.getLocation(), end.getLocation());<a name="line.201"></a>
+<FONT color="green">202</FONT>                }<a name="line.202"></a>
+<FONT color="green">203</FONT>    <a name="line.203"></a>
+<FONT color="green">204</FONT>                // create the edge and store it<a name="line.204"></a>
+<FONT color="green">205</FONT>                edges.add(new Edge(start, end, line));<a name="line.205"></a>
+<FONT color="green">206</FONT>    <a name="line.206"></a>
+<FONT color="green">207</FONT>                // check if another vertex also happens to be on this line<a name="line.207"></a>
+<FONT color="green">208</FONT>                for (final Vertex vertex : vArray) {<a name="line.208"></a>
+<FONT color="green">209</FONT>                    if (vertex != start &amp;&amp; vertex != end &amp;&amp;<a name="line.209"></a>
+<FONT color="green">210</FONT>                        FastMath.abs(line.getOffset(vertex.getLocation())) &lt;= hyperplaneThickness) {<a name="line.210"></a>
+<FONT color="green">211</FONT>                        vertex.bindWith(line);<a name="line.211"></a>
+<FONT color="green">212</FONT>                    }<a name="line.212"></a>
+<FONT color="green">213</FONT>                }<a name="line.213"></a>
+<FONT color="green">214</FONT>    <a name="line.214"></a>
+<FONT color="green">215</FONT>            }<a name="line.215"></a>
+<FONT color="green">216</FONT>    <a name="line.216"></a>
+<FONT color="green">217</FONT>            // build the tree top-down<a name="line.217"></a>
+<FONT color="green">218</FONT>            final BSPTree&lt;Euclidean2D&gt; tree = new BSPTree&lt;Euclidean2D&gt;();<a name="line.218"></a>
+<FONT color="green">219</FONT>            insertEdges(hyperplaneThickness, tree, edges);<a name="line.219"></a>
+<FONT color="green">220</FONT>    <a name="line.220"></a>
+<FONT color="green">221</FONT>            return tree;<a name="line.221"></a>
+<FONT color="green">222</FONT>    <a name="line.222"></a>
+<FONT color="green">223</FONT>        }<a name="line.223"></a>
+<FONT color="green">224</FONT>    <a name="line.224"></a>
+<FONT color="green">225</FONT>        /** Recursively build a tree by inserting cut sub-hyperplanes.<a name="line.225"></a>
+<FONT color="green">226</FONT>         * @param hyperplaneThickness tolerance below which points are consider to<a name="line.226"></a>
+<FONT color="green">227</FONT>         * belong to the hyperplane (which is therefore more a slab)<a name="line.227"></a>
+<FONT color="green">228</FONT>         * @param node current tree node (it is a leaf node at the beginning<a name="line.228"></a>
+<FONT color="green">229</FONT>         * of the call)<a name="line.229"></a>
+<FONT color="green">230</FONT>         * @param edges list of edges to insert in the cell defined by this node<a name="line.230"></a>
+<FONT color="green">231</FONT>         * (excluding edges not belonging to the cell defined by this node)<a name="line.231"></a>
+<FONT color="green">232</FONT>         */<a name="line.232"></a>
+<FONT color="green">233</FONT>        private static void insertEdges(final double hyperplaneThickness,<a name="line.233"></a>
+<FONT color="green">234</FONT>                                        final BSPTree&lt;Euclidean2D&gt; node,<a name="line.234"></a>
+<FONT color="green">235</FONT>                                        final List&lt;Edge&gt; edges) {<a name="line.235"></a>
+<FONT color="green">236</FONT>    <a name="line.236"></a>
+<FONT color="green">237</FONT>            // find an edge with an hyperplane that can be inserted in the node<a name="line.237"></a>
+<FONT color="green">238</FONT>            int index = 0;<a name="line.238"></a>
+<FONT color="green">239</FONT>            Edge inserted =null;<a name="line.239"></a>
+<FONT color="green">240</FONT>            while (inserted == null &amp;&amp; index &lt; edges.size()) {<a name="line.240"></a>
+<FONT color="green">241</FONT>                inserted = edges.get(index++);<a name="line.241"></a>
+<FONT color="green">242</FONT>                if (inserted.getNode() == null) {<a name="line.242"></a>
+<FONT color="green">243</FONT>                    if (node.insertCut(inserted.getLine())) {<a name="line.243"></a>
+<FONT color="green">244</FONT>                        inserted.setNode(node);<a name="line.244"></a>
+<FONT color="green">245</FONT>                    } else {<a name="line.245"></a>
+<FONT color="green">246</FONT>                        inserted = null;<a name="line.246"></a>
+<FONT color="green">247</FONT>                    }<a name="line.247"></a>
+<FONT color="green">248</FONT>                } else {<a name="line.248"></a>
+<FONT color="green">249</FONT>                    inserted = null;<a name="line.249"></a>
+<FONT color="green">250</FONT>                }<a name="line.250"></a>
+<FONT color="green">251</FONT>            }<a name="line.251"></a>
+<FONT color="green">252</FONT>    <a name="line.252"></a>
+<FONT color="green">253</FONT>            if (inserted == null) {<a name="line.253"></a>
+<FONT color="green">254</FONT>                // no suitable edge was found, the node remains a leaf node<a name="line.254"></a>
+<FONT color="green">255</FONT>                // we need to set its inside/outside boolean indicator<a name="line.255"></a>
+<FONT color="green">256</FONT>                final BSPTree&lt;Euclidean2D&gt; parent = node.getParent();<a name="line.256"></a>
+<FONT color="green">257</FONT>                if (parent == null || node == parent.getMinus()) {<a name="line.257"></a>
+<FONT color="green">258</FONT>                    node.setAttribute(Boolean.TRUE);<a name="line.258"></a>
+<FONT color="green">259</FONT>                } else {<a name="line.259"></a>
+<FONT color="green">260</FONT>                    node.setAttribute(Boolean.FALSE);<a name="line.260"></a>
+<FONT color="green">261</FONT>                }<a name="line.261"></a>
+<FONT color="green">262</FONT>                return;<a name="line.262"></a>
+<FONT color="green">263</FONT>            }<a name="line.263"></a>
+<FONT color="green">264</FONT>    <a name="line.264"></a>
+<FONT color="green">265</FONT>            // we have split the node by inserted an edge as a cut sub-hyperplane<a name="line.265"></a>
+<FONT color="green">266</FONT>            // distribute the remaining edges in the two sub-trees<a name="line.266"></a>
+<FONT color="green">267</FONT>            final List&lt;Edge&gt; plusList  = new ArrayList&lt;Edge&gt;();<a name="line.267"></a>
+<FONT color="green">268</FONT>            final List&lt;Edge&gt; minusList = new ArrayList&lt;Edge&gt;();<a name="line.268"></a>
+<FONT color="green">269</FONT>            for (final Edge edge : edges) {<a name="line.269"></a>
+<FONT color="green">270</FONT>                if (edge != inserted) {<a name="line.270"></a>
+<FONT color="green">271</FONT>                    final double startOffset = inserted.getLine().getOffset(edge.getStart().getLocation());<a name="line.271"></a>
+<FONT color="green">272</FONT>                    final double endOffset   = inserted.getLine().getOffset(edge.getEnd().getLocation());<a name="line.272"></a>
+<FONT color="green">273</FONT>                    Side startSide = (FastMath.abs(startOffset) &lt;= hyperplaneThickness) ?<a name="line.273"></a>
+<FONT color="green">274</FONT>                                     Side.HYPER : ((startOffset &lt; 0) ? Side.MINUS : Side.PLUS);<a name="line.274"></a>
+<FONT color="green">275</FONT>                    Side endSide   = (FastMath.abs(endOffset) &lt;= hyperplaneThickness) ?<a name="line.275"></a>
+<FONT color="green">276</FONT>                                     Side.HYPER : ((endOffset &lt; 0) ? Side.MINUS : Side.PLUS);<a name="line.276"></a>
+<FONT color="green">277</FONT>                    switch (startSide) {<a name="line.277"></a>
+<FONT color="green">278</FONT>                        case PLUS:<a name="line.278"></a>
+<FONT color="green">279</FONT>                            if (endSide == Side.MINUS) {<a name="line.279"></a>
+<FONT color="green">280</FONT>                                // we need to insert a split point on the hyperplane<a name="line.280"></a>
+<FONT color="green">281</FONT>                                final Vertex splitPoint = edge.split(inserted.getLine());<a name="line.281"></a>
+<FONT color="green">282</FONT>                                minusList.add(splitPoint.getOutgoing());<a name="line.282"></a>
+<FONT color="green">283</FONT>                                plusList.add(splitPoint.getIncoming());<a name="line.283"></a>
+<FONT color="green">284</FONT>                            } else {<a name="line.284"></a>
+<FONT color="green">285</FONT>                                plusList.add(edge);<a name="line.285"></a>
+<FONT color="green">286</FONT>                            }<a name="line.286"></a>
+<FONT color="green">287</FONT>                            break;<a name="line.287"></a>
+<FONT color="green">288</FONT>                        case MINUS:<a name="line.288"></a>
+<FONT color="green">289</FONT>                            if (endSide == Side.PLUS) {<a name="line.289"></a>
+<FONT color="green">290</FONT>                                // we need to insert a split point on the hyperplane<a name="line.290"></a>
+<FONT color="green">291</FONT>                                final Vertex splitPoint = edge.split(inserted.getLine());<a name="line.291"></a>
+<FONT color="green">292</FONT>                                minusList.add(splitPoint.getIncoming());<a name="line.292"></a>
+<FONT color="green">293</FONT>                                plusList.add(splitPoint.getOutgoing());<a name="line.293"></a>
+<FONT color="green">294</FONT>                            } else {<a name="line.294"></a>
+<FONT color="green">295</FONT>                                minusList.add(edge);<a name="line.295"></a>
+<FONT color="green">296</FONT>                            }<a name="line.296"></a>
+<FONT color="green">297</FONT>                            break;<a name="line.297"></a>
+<FONT color="green">298</FONT>                        default:<a name="line.298"></a>
+<FONT color="green">299</FONT>                            if (endSide == Side.PLUS) {<a name="line.299"></a>
+<FONT color="green">300</FONT>                                plusList.add(edge);<a name="line.300"></a>
+<FONT color="green">301</FONT>                            } else if (endSide == Side.MINUS) {<a name="line.301"></a>
+<FONT color="green">302</FONT>                                minusList.add(edge);<a name="line.302"></a>
+<FONT color="green">303</FONT>                            }<a name="line.303"></a>
+<FONT color="green">304</FONT>                            break;<a name="line.304"></a>
+<FONT color="green">305</FONT>                    }<a name="line.305"></a>
+<FONT color="green">306</FONT>                }<a name="line.306"></a>
+<FONT color="green">307</FONT>            }<a name="line.307"></a>
+<FONT color="green">308</FONT>    <a name="line.308"></a>
+<FONT color="green">309</FONT>            // recurse through lower levels<a name="line.309"></a>
+<FONT color="green">310</FONT>            if (!plusList.isEmpty()) {<a name="line.310"></a>
+<FONT color="green">311</FONT>                insertEdges(hyperplaneThickness, node.getPlus(),  plusList);<a name="line.311"></a>
+<FONT color="green">312</FONT>            } else {<a name="line.312"></a>
+<FONT color="green">313</FONT>                node.getPlus().setAttribute(Boolean.FALSE);<a name="line.313"></a>
+<FONT color="green">314</FONT>            }<a name="line.314"></a>
+<FONT color="green">315</FONT>            if (!minusList.isEmpty()) {<a name="line.315"></a>
+<FONT color="green">316</FONT>                insertEdges(hyperplaneThickness, node.getMinus(), minusList);<a name="line.316"></a>
+<FONT color="green">317</FONT>            } else {<a name="line.317"></a>
+<FONT color="green">318</FONT>                node.getMinus().setAttribute(Boolean.TRUE);<a name="line.318"></a>
+<FONT color="green">319</FONT>            }<a name="line.319"></a>
+<FONT color="green">320</FONT>    <a name="line.320"></a>
+<FONT color="green">321</FONT>        }<a name="line.321"></a>
+<FONT color="green">322</FONT>    <a name="line.322"></a>
+<FONT color="green">323</FONT>        /** Internal class for holding vertices while they are processed to build a BSP tree. */<a name="line.323"></a>
+<FONT color="green">324</FONT>        private static class Vertex {<a name="line.324"></a>
+<FONT color="green">325</FONT>    <a name="line.325"></a>
+<FONT color="green">326</FONT>            /** Vertex location. */<a name="line.326"></a>
+<FONT color="green">327</FONT>            private final Vector2D location;<a name="line.327"></a>
+<FONT color="green">328</FONT>    <a name="line.328"></a>
+<FONT color="green">329</FONT>            /** Incoming edge. */<a name="line.329"></a>
+<FONT color="green">330</FONT>            private Edge incoming;<a name="line.330"></a>
+<FONT color="green">331</FONT>    <a name="line.331"></a>
+<FONT color="green">332</FONT>            /** Outgoing edge. */<a name="line.332"></a>
+<FONT color="green">333</FONT>            private Edge outgoing;<a name="line.333"></a>
+<FONT color="green">334</FONT>    <a name="line.334"></a>
+<FONT color="green">335</FONT>            /** Lines bound with this vertex. */<a name="line.335"></a>
+<FONT color="green">336</FONT>            private final List&lt;Line&gt; lines;<a name="line.336"></a>
+<FONT color="green">337</FONT>    <a name="line.337"></a>
+<FONT color="green">338</FONT>            /** Build a non-processed vertex not owned by any node yet.<a name="line.338"></a>
+<FONT color="green">339</FONT>             * @param location vertex location<a name="line.339"></a>
+<FONT color="green">340</FONT>             */<a name="line.340"></a>
+<FONT color="green">341</FONT>            public Vertex(final Vector2D location) {<a name="line.341"></a>
+<FONT color="green">342</FONT>                this.location = location;<a name="line.342"></a>
+<FONT color="green">343</FONT>                this.incoming = null;<a name="line.343"></a>
+<FONT color="green">344</FONT>                this.outgoing = null;<a name="line.344"></a>
+<FONT color="green">345</FONT>                this.lines    = new ArrayList&lt;Line&gt;();<a name="line.345"></a>
+<FONT color="green">346</FONT>            }<a name="line.346"></a>
+<FONT color="green">347</FONT>    <a name="line.347"></a>
+<FONT color="green">348</FONT>            /** Get Vertex location.<a name="line.348"></a>
+<FONT color="green">349</FONT>             * @return vertex location<a name="line.349"></a>
+<FONT color="green">350</FONT>             */<a name="line.350"></a>
+<FONT color="green">351</FONT>            public Vector2D getLocation() {<a name="line.351"></a>
+<FONT color="green">352</FONT>                return location;<a name="line.352"></a>
+<FONT color="green">353</FONT>            }<a name="line.353"></a>
+<FONT color="green">354</FONT>    <a name="line.354"></a>
+<FONT color="green">355</FONT>            /** Bind a line considered to contain this vertex.<a name="line.355"></a>
+<FONT color="green">356</FONT>             * @param line line to bind with this vertex<a name="line.356"></a>
+<FONT color="green">357</FONT>             */<a name="line.357"></a>
+<FONT color="green">358</FONT>            public void bindWith(final Line line) {<a name="line.358"></a>
+<FONT color="green">359</FONT>                lines.add(line);<a name="line.359"></a>
+<FONT color="green">360</FONT>            }<a name="line.360"></a>
+<FONT color="green">361</FONT>    <a name="line.361"></a>
+<FONT color="green">362</FONT>            /** Get the common line bound with both the instance and another vertex, if any.<a name="line.362"></a>
+<FONT color="green">363</FONT>             * &lt;p&gt;<a name="line.363"></a>
+<FONT color="green">364</FONT>             * When two vertices are both bound to the same line, this means they are<a name="line.364"></a>
+<FONT color="green">365</FONT>             * already handled by node associated with this line, so there is no need<a name="line.365"></a>
+<FONT color="green">366</FONT>             * to create a cut hyperplane for them.<a name="line.366"></a>
+<FONT color="green">367</FONT>             * &lt;/p&gt;<a name="line.367"></a>
+<FONT color="green">368</FONT>             * @param vertex other vertex to check instance against<a name="line.368"></a>
+<FONT color="green">369</FONT>             * @return line bound with both the instance and another vertex, or null if the<a name="line.369"></a>
+<FONT color="green">370</FONT>             * two vertices do not share a line yet<a name="line.370"></a>
+<FONT color="green">371</FONT>             */<a name="line.371"></a>
+<FONT color="green">372</FONT>            public Line sharedLineWith(final Vertex vertex) {<a name="line.372"></a>
+<FONT color="green">373</FONT>                for (final Line line1 : lines) {<a name="line.373"></a>
+<FONT color="green">374</FONT>                    for (final Line line2 : vertex.lines) {<a name="line.374"></a>
+<FONT color="green">375</FONT>                        if (line1 == line2) {<a name="line.375"></a>
+<FONT color="green">376</FONT>                            return line1;<a name="line.376"></a>
+<FONT color="green">377</FONT>                        }<a name="line.377"></a>
+<FONT color="green">378</FONT>                    }<a name="line.378"></a>
+<FONT color="green">379</FONT>                }<a name="line.379"></a>
+<FONT color="green">380</FONT>                return null;<a name="line.380"></a>
+<FONT color="green">381</FONT>            }<a name="line.381"></a>
+<FONT color="green">382</FONT>    <a name="line.382"></a>
+<FONT color="green">383</FONT>            /** Set incoming edge.<a name="line.383"></a>
+<FONT color="green">384</FONT>             * &lt;p&gt;<a name="line.384"></a>
+<FONT color="green">385</FONT>             * The line supporting the incoming edge is automatically bound<a name="line.385"></a>
+<FONT color="green">386</FONT>             * with the instance.<a name="line.386"></a>
+<FONT color="green">387</FONT>             * &lt;/p&gt;<a name="line.387"></a>
+<FONT color="green">388</FONT>             * @param incoming incoming edge<a name="line.388"></a>
+<FONT color="green">389</FONT>             */<a name="line.389"></a>
+<FONT color="green">390</FONT>            public void setIncoming(final Edge incoming) {<a name="line.390"></a>
+<FONT color="green">391</FONT>                this.incoming = incoming;<a name="line.391"></a>
+<FONT color="green">392</FONT>                bindWith(incoming.getLine());<a name="line.392"></a>
+<FONT color="green">393</FONT>            }<a name="line.393"></a>
+<FONT color="green">394</FONT>    <a name="line.394"></a>
+<FONT color="green">395</FONT>            /** Get incoming edge.<a name="line.395"></a>
+<FONT color="green">396</FONT>             * @return incoming edge<a name="line.396"></a>
+<FONT color="green">397</FONT>             */<a name="line.397"></a>
+<FONT color="green">398</FONT>            public Edge getIncoming() {<a name="line.398"></a>
+<FONT color="green">399</FONT>                return incoming;<a name="line.399"></a>
+<FONT color="green">400</FONT>            }<a name="line.400"></a>
+<FONT color="green">401</FONT>    <a name="line.401"></a>
+<FONT color="green">402</FONT>            /** Set outgoing edge.<a name="line.402"></a>
+<FONT color="green">403</FONT>             * &lt;p&gt;<a name="line.403"></a>
+<FONT color="green">404</FONT>             * The line supporting the outgoing edge is automatically bound<a name="line.404"></a>
+<FONT color="green">405</FONT>             * with the instance.<a name="line.405"></a>
+<FONT color="green">406</FONT>             * &lt;/p&gt;<a name="line.406"></a>
+<FONT color="green">407</FONT>             * @param outgoing outgoing edge<a name="line.407"></a>
+<FONT color="green">408</FONT>             */<a name="line.408"></a>
+<FONT color="green">409</FONT>            public void setOutgoing(final Edge outgoing) {<a name="line.409"></a>
+<FONT color="green">410</FONT>                this.outgoing = outgoing;<a name="line.410"></a>
+<FONT color="green">411</FONT>                bindWith(outgoing.getLine());<a name="line.411"></a>
+<FONT color="green">412</FONT>            }<a name="line.412"></a>
+<FONT color="green">413</FONT>    <a name="line.413"></a>
+<FONT color="green">414</FONT>            /** Get outgoing edge.<a name="line.414"></a>
+<FONT color="green">415</FONT>             * @return outgoing edge<a name="line.415"></a>
+<FONT color="green">416</FONT>             */<a name="line.416"></a>
+<FONT color="green">417</FONT>            public Edge getOutgoing() {<a name="line.417"></a>
+<FONT color="green">418</FONT>                return outgoing;<a name="line.418"></a>
+<FONT color="green">419</FONT>            }<a name="line.419"></a>
+<FONT color="green">420</FONT>    <a name="line.420"></a>
+<FONT color="green">421</FONT>        }<a name="line.421"></a>
+<FONT color="green">422</FONT>    <a name="line.422"></a>
+<FONT color="green">423</FONT>        /** Internal class for holding edges while they are processed to build a BSP tree. */<a name="line.423"></a>
+<FONT color="green">424</FONT>        private static class Edge {<a name="line.424"></a>
+<FONT color="green">425</FONT>    <a name="line.425"></a>
+<FONT color="green">426</FONT>            /** Start vertex. */<a name="line.426"></a>
+<FONT color="green">427</FONT>            private final Vertex start;<a name="line.427"></a>
+<FONT color="green">428</FONT>    <a name="line.428"></a>
+<FONT color="green">429</FONT>            /** End vertex. */<a name="line.429"></a>
+<FONT color="green">430</FONT>            private final Vertex end;<a name="line.430"></a>
+<FONT color="green">431</FONT>    <a name="line.431"></a>
+<FONT color="green">432</FONT>            /** Line supporting the edge. */<a name="line.432"></a>
+<FONT color="green">433</FONT>            private final Line line;<a name="line.433"></a>
+<FONT color="green">434</FONT>    <a name="line.434"></a>
+<FONT color="green">435</FONT>            /** Node whose cut hyperplane contains this edge. */<a name="line.435"></a>
+<FONT color="green">436</FONT>            private BSPTree&lt;Euclidean2D&gt; node;<a name="line.436"></a>
+<FONT color="green">437</FONT>    <a name="line.437"></a>
+<FONT color="green">438</FONT>            /** Build an edge not contained in any node yet.<a name="line.438"></a>
+<FONT color="green">439</FONT>             * @param start start vertex<a name="line.439"></a>
+<FONT color="green">440</FONT>             * @param end end vertex<a name="line.440"></a>
+<FONT color="green">441</FONT>             * @param line line supporting the edge<a name="line.441"></a>
+<FONT color="green">442</FONT>             */<a name="line.442"></a>
+<FONT color="green">443</FONT>            public Edge(final Vertex start, final Vertex end, final Line line) {<a name="line.443"></a>
+<FONT color="green">444</FONT>    <a name="line.444"></a>
+<FONT color="green">445</FONT>                this.start = start;<a name="line.445"></a>
+<FONT color="green">446</FONT>                this.end   = end;<a name="line.446"></a>
+<FONT color="green">447</FONT>                this.line  = line;<a name="line.447"></a>
+<FONT color="green">448</FONT>                this.node  = null;<a name="line.448"></a>
+<FONT color="green">449</FONT>    <a name="line.449"></a>
+<FONT color="green">450</FONT>                // connect the vertices back to the edge<a name="line.450"></a>
+<FONT color="green">451</FONT>                start.setOutgoing(this);<a name="line.451"></a>
+<FONT color="green">452</FONT>                end.setIncoming(this);<a name="line.452"></a>
+<FONT color="green">453</FONT>    <a name="line.453"></a>
+<FONT color="green">454</FONT>            }<a name="line.454"></a>
+<FONT color="green">455</FONT>    <a name="line.455"></a>
+<FONT color="green">456</FONT>            /** Get start vertex.<a name="line.456"></a>
+<FONT color="green">457</FONT>             * @return start vertex<a name="line.457"></a>
+<FONT color="green">458</FONT>             */<a name="line.458"></a>
+<FONT color="green">459</FONT>            public Vertex getStart() {<a name="line.459"></a>
+<FONT color="green">460</FONT>                return start;<a name="line.460"></a>
+<FONT color="green">461</FONT>            }<a name="line.461"></a>
+<FONT color="green">462</FONT>    <a name="line.462"></a>
+<FONT color="green">463</FONT>            /** Get end vertex.<a name="line.463"></a>
+<FONT color="green">464</FONT>             * @return end vertex<a name="line.464"></a>
+<FONT color="green">465</FONT>             */<a name="line.465"></a>
+<FONT color="green">466</FONT>            public Vertex getEnd() {<a name="line.466"></a>
+<FONT color="green">467</FONT>                return end;<a name="line.467"></a>
+<FONT color="green">468</FONT>            }<a name="line.468"></a>
+<FONT color="green">469</FONT>    <a name="line.469"></a>
+<FONT color="green">470</FONT>            /** Get the line supporting this edge.<a name="line.470"></a>
+<FONT color="green">471</FONT>             * @return line supporting this edge<a name="line.471"></a>
+<FONT color="green">472</FONT>             */<a name="line.472"></a>
+<FONT color="green">473</FONT>            public Line getLine() {<a name="line.473"></a>
+<FONT color="green">474</FONT>                return line;<a name="line.474"></a>
+<FONT color="green">475</FONT>            }<a name="line.475"></a>
+<FONT color="green">476</FONT>    <a name="line.476"></a>
+<FONT color="green">477</FONT>            /** Set the node whose cut hyperplane contains this edge.<a name="line.477"></a>
+<FONT color="green">478</FONT>             * @param node node whose cut hyperplane contains this edge<a name="line.478"></a>
+<FONT color="green">479</FONT>             */<a name="line.479"></a>
+<FONT color="green">480</FONT>            public void setNode(final BSPTree&lt;Euclidean2D&gt; node) {<a name="line.480"></a>
+<FONT color="green">481</FONT>                this.node = node;<a name="line.481"></a>
+<FONT color="green">482</FONT>            }<a name="line.482"></a>
+<FONT color="green">483</FONT>    <a name="line.483"></a>
+<FONT color="green">484</FONT>            /** Get the node whose cut hyperplane contains this edge.<a name="line.484"></a>
+<FONT color="green">485</FONT>             * @return node whose cut hyperplane contains this edge<a name="line.485"></a>
+<FONT color="green">486</FONT>             * (null if edge has not yet been inserted into the BSP tree)<a name="line.486"></a>
+<FONT color="green">487</FONT>             */<a name="line.487"></a>
+<FONT color="green">488</FONT>            public BSPTree&lt;Euclidean2D&gt; getNode() {<a name="line.488"></a>
+<FONT color="green">489</FONT>                return node;<a name="line.489"></a>
+<FONT color="green">490</FONT>            }<a name="line.490"></a>
+<FONT color="green">491</FONT>    <a name="line.491"></a>
+<FONT color="green">492</FONT>            /** Split the edge.<a name="line.492"></a>
+<FONT color="green">493</FONT>             * &lt;p&gt;<a name="line.493"></a>
+<FONT color="green">494</FONT>             * Once split, this edge is not referenced anymore by the vertices,<a name="line.494"></a>
+<FONT color="green">495</FONT>             * it is replaced by the two half-edges and an intermediate splitting<a name="line.495"></a>
+<FONT color="green">496</FONT>             * vertex is introduced to connect these two halves.<a name="line.496"></a>
+<FONT color="green">497</FONT>             * &lt;/p&gt;<a name="line.497"></a>
+<FONT color="green">498</FONT>             * @param splitLine line splitting the edge in two halves<a name="line.498"></a>
+<FONT color="green">499</FONT>             * @return split vertex (its incoming and outgoing edges are the two halves)<a name="line.499"></a>
+<FONT color="green">500</FONT>             */<a name="line.500"></a>
+<FONT color="green">501</FONT>            public Vertex split(final Line splitLine) {<a name="line.501"></a>
+<FONT color="green">502</FONT>                final Vertex splitVertex = new Vertex(line.intersection(splitLine));<a name="line.502"></a>
+<FONT color="green">503</FONT>                splitVertex.bindWith(splitLine);<a name="line.503"></a>
+<FONT color="green">504</FONT>                final Edge startHalf = new Edge(start, splitVertex, line);<a name="line.504"></a>
+<FONT color="green">505</FONT>                final Edge endHalf   = new Edge(splitVertex, end, line);<a name="line.505"></a>
+<FONT color="green">506</FONT>                startHalf.node = node;<a name="line.506"></a>
+<FONT color="green">507</FONT>                endHalf.node   = node;<a name="line.507"></a>
+<FONT color="green">508</FONT>                return splitVertex;<a name="line.508"></a>
+<FONT color="green">509</FONT>            }<a name="line.509"></a>
+<FONT color="green">510</FONT>    <a name="line.510"></a>
+<FONT color="green">511</FONT>        }<a name="line.511"></a>
+<FONT color="green">512</FONT>    <a name="line.512"></a>
+<FONT color="green">513</FONT>        /** {@inheritDoc} */<a name="line.513"></a>
+<FONT color="green">514</FONT>        @Override<a name="line.514"></a>
+<FONT color="green">515</FONT>        public PolygonsSet buildNew(final BSPTree&lt;Euclidean2D&gt; tree) {<a name="line.515"></a>
+<FONT color="green">516</FONT>            return new PolygonsSet(tree);<a name="line.516"></a>
+<FONT color="green">517</FONT>        }<a name="line.517"></a>
+<FONT color="green">518</FONT>    <a name="line.518"></a>
+<FONT color="green">519</FONT>        /** {@inheritDoc} */<a name="line.519"></a>
+<FONT color="green">520</FONT>        @Override<a name="line.520"></a>
+<FONT color="green">521</FONT>        protected void computeGeometricalProperties() {<a name="line.521"></a>
+<FONT color="green">522</FONT>    <a name="line.522"></a>
+<FONT color="green">523</FONT>            final Vector2D[][] v = getVertices();<a name="line.523"></a>
+<FONT color="green">524</FONT>    <a name="line.524"></a>
+<FONT color="green">525</FONT>            if (v.length == 0) {<a name="line.525"></a>
+<FONT color="green">526</FONT>                final BSPTree&lt;Euclidean2D&gt; tree = getTree(false);<a name="line.526"></a>
+<FONT color="green">527</FONT>                if (tree.getCut() == null &amp;&amp; (Boolean) tree.getAttribute()) {<a name="line.527"></a>
+<FONT color="green">528</FONT>                    // the instance covers the whole space<a name="line.528"></a>
+<FONT color="green">529</FONT>                    setSize(Double.POSITIVE_INFINITY);<a name="line.529"></a>
+<FONT color="green">530</FONT>                    setBarycenter(Vector2D.NaN);<a name="line.530"></a>
+<FONT color="green">531</FONT>                } else {<a name="line.531"></a>
+<FONT color="green">532</FONT>                    setSize(0);<a name="line.532"></a>
+<FONT color="green">533</FONT>                    setBarycenter(new Vector2D(0, 0));<a name="line.533"></a>
+<FONT color="green">534</FONT>                }<a name="line.534"></a>
+<FONT color="green">535</FONT>            } else if (v[0][0] == null) {<a name="line.535"></a>
+<FONT color="green">536</FONT>                // there is at least one open-loop: the polygon is infinite<a name="line.536"></a>
+<FONT color="green">537</FONT>                setSize(Double.POSITIVE_INFINITY);<a name="line.537"></a>
+<FONT color="green">538</FONT>                setBarycenter(Vector2D.NaN);<a name="line.538"></a>
+<FONT color="green">539</FONT>            } else {<a name="line.539"></a>
+<FONT color="green">540</FONT>                // all loops are closed, we compute some integrals around the shape<a name="line.540"></a>
+<FONT color="green">541</FONT>    <a name="line.541"></a>
+<FONT color="green">542</FONT>                double sum  = 0;<a name="line.542"></a>
+<FONT color="green">543</FONT>                double sumX = 0;<a name="line.543"></a>
+<FONT color="green">544</FONT>                double sumY = 0;<a name="line.544"></a>
+<FONT color="green">545</FONT>    <a name="line.545"></a>
+<FONT color="green">546</FONT>                for (Vector2D[] loop : v) {<a name="line.546"></a>
+<FONT color="green">547</FONT>                    double x1 = loop[loop.length - 1].getX();<a name="line.547"></a>
+<FONT color="green">548</FONT>                    double y1 = loop[loop.length - 1].getY();<a name="line.548"></a>
+<FONT color="green">549</FONT>                    for (final Vector2D point : loop) {<a name="line.549"></a>
+<FONT color="green">550</FONT>                        final double x0 = x1;<a name="line.550"></a>
+<FONT color="green">551</FONT>                        final double y0 = y1;<a name="line.551"></a>
+<FONT color="green">552</FONT>                        x1 = point.getX();<a name="line.552"></a>
+<FONT color="green">553</FONT>                        y1 = point.getY();<a name="line.553"></a>
+<FONT color="green">554</FONT>                        final double factor = x0 * y1 - y0 * x1;<a name="line.554"></a>
+<FONT color="green">555</FONT>                        sum  += factor;<a name="line.555"></a>
+<FONT color="green">556</FONT>                        sumX += factor * (x0 + x1);<a name="line.556"></a>
+<FONT color="green">557</FONT>                        sumY += factor * (y0 + y1);<a name="line.557"></a>
+<FONT color="green">558</FONT>                    }<a name="line.558"></a>
+<FONT color="green">559</FONT>                }<a name="line.559"></a>
+<FONT color="green">560</FONT>    <a name="line.560"></a>
+<FONT color="green">561</FONT>                if (sum &lt; 0) {<a name="line.561"></a>
+<FONT color="green">562</FONT>                    // the polygon as a finite outside surrounded by an infinite inside<a name="line.562"></a>
+<FONT color="green">563</FONT>                    setSize(Double.POSITIVE_INFINITY);<a name="line.563"></a>
+<FONT color="green">564</FONT>                    setBarycenter(Vector2D.NaN);<a name="line.564"></a>
+<FONT color="green">565</FONT>                } else {<a name="line.565"></a>
+<FONT color="green">566</FONT>                    setSize(sum / 2);<a name="line.566"></a>
+<FONT color="green">567</FONT>                    setBarycenter(new Vector2D(sumX / (3 * sum), sumY / (3 * sum)));<a name="line.567"></a>
+<FONT color="green">568</FONT>                }<a name="line.568"></a>
+<FONT color="green">569</FONT>    <a name="line.569"></a>
+<FONT color="green">570</FONT>            }<a name="line.570"></a>
+<FONT color="green">571</FONT>    <a name="line.571"></a>
+<FONT color="green">572</FONT>        }<a name="line.572"></a>
+<FONT color="green">573</FONT>    <a name="line.573"></a>
+<FONT color="green">574</FONT>        /** Get the vertices of the polygon.<a name="line.574"></a>
+<FONT color="green">575</FONT>         * &lt;p&gt;The polygon boundary can be represented as an array of loops,<a name="line.575"></a>
+<FONT color="green">576</FONT>         * each loop being itself an array of vertices.&lt;/p&gt;<a name="line.576"></a>
+<FONT color="green">577</FONT>         * &lt;p&gt;In order to identify open loops which start and end by<a name="line.577"></a>
+<FONT color="green">578</FONT>         * infinite edges, the open loops arrays start with a null point. In<a name="line.578"></a>
+<FONT color="green">579</FONT>         * this case, the first non null point and the last point of the<a name="line.579"></a>
+<FONT color="green">580</FONT>         * array do not represent real vertices, they are dummy points<a name="line.580"></a>
+<FONT color="green">581</FONT>         * intended only to get the direction of the first and last edge. An<a name="line.581"></a>
+<FONT color="green">582</FONT>         * open loop consisting of a single infinite line will therefore be<a name="line.582"></a>
+<FONT color="green">583</FONT>         * represented by a three elements array with one null point<a name="line.583"></a>
+<FONT color="green">584</FONT>         * followed by two dummy points. The open loops are always the first<a name="line.584"></a>
+<FONT color="green">585</FONT>         * ones in the loops array.&lt;/p&gt;<a name="line.585"></a>
+<FONT color="green">586</FONT>         * &lt;p&gt;If the polygon has no boundary at all, a zero length loop<a name="line.586"></a>
+<FONT color="green">587</FONT>         * array will be returned.&lt;/p&gt;<a name="line.587"></a>
+<FONT color="green">588</FONT>         * &lt;p&gt;All line segments in the various loops have the inside of the<a name="line.588"></a>
+<FONT color="green">589</FONT>         * region on their left side and the outside on their right side<a name="line.589"></a>
+<FONT color="green">590</FONT>         * when moving in the underlying line direction. This means that<a name="line.590"></a>
+<FONT color="green">591</FONT>         * closed loops surrounding finite areas obey the direct<a name="line.591"></a>
+<FONT color="green">592</FONT>         * trigonometric orientation.&lt;/p&gt;<a name="line.592"></a>
+<FONT color="green">593</FONT>         * @return vertices of the polygon, organized as oriented boundary<a name="line.593"></a>
+<FONT color="green">594</FONT>         * loops with the open loops first (the returned value is guaranteed<a name="line.594"></a>
+<FONT color="green">595</FONT>         * to be non-null)<a name="line.595"></a>
+<FONT color="green">596</FONT>         */<a name="line.596"></a>
+<FONT color="green">597</FONT>        public Vector2D[][] getVertices() {<a name="line.597"></a>
+<FONT color="green">598</FONT>            if (vertices == null) {<a name="line.598"></a>
+<FONT color="green">599</FONT>                if (getTree(false).getCut() == null) {<a name="line.599"></a>
+<FONT color="green">600</FONT>                    vertices = new Vector2D[0][];<a name="line.600"></a>
+<FONT color="green">601</FONT>                } else {<a name="line.601"></a>
+<FONT color="green">602</FONT>    <a name="line.602"></a>
+<FONT color="green">603</FONT>                    // sort the segments according to their start point<a name="line.603"></a>
+<FONT color="green">604</FONT>                    final SegmentsBuilder visitor = new SegmentsBuilder();<a name="line.604"></a>
+<FONT color="green">605</FONT>                    getTree(true).visit(visitor);<a name="line.605"></a>
+<FONT color="green">606</FONT>                    final AVLTree&lt;ComparableSegment&gt; sorted = visitor.getSorted();<a name="line.606"></a>
+<FONT color="green">607</FONT>    <a name="line.607"></a>
+<FONT color="green">608</FONT>                    // identify the loops, starting from the open ones<a name="line.608"></a>
+<FONT color="green">609</FONT>                    // (their start segments are naturally at the sorted set beginning)<a name="line.609"></a>
+<FONT color="green">610</FONT>                    final ArrayList&lt;List&lt;ComparableSegment&gt;&gt; loops = new ArrayList&lt;List&lt;ComparableSegment&gt;&gt;();<a name="line.610"></a>
+<FONT color="green">611</FONT>                    while (!sorted.isEmpty()) {<a name="line.611"></a>
+<FONT color="green">612</FONT>                        final AVLTree&lt;ComparableSegment&gt;.Node node = sorted.getSmallest();<a name="line.612"></a>
+<FONT color="green">613</FONT>                        final List&lt;ComparableSegment&gt; loop = followLoop(node, sorted);<a name="line.613"></a>
+<FONT color="green">614</FONT>                        if (loop != null) {<a name="line.614"></a>
+<FONT color="green">615</FONT>                            loops.add(loop);<a name="line.615"></a>
+<FONT color="green">616</FONT>                        }<a name="line.616"></a>
+<FONT color="green">617</FONT>                    }<a name="line.617"></a>
+<FONT color="green">618</FONT>    <a name="line.618"></a>
+<FONT color="green">619</FONT>                    // tranform the loops in an array of arrays of points<a name="line.619"></a>
+<FONT color="green">620</FONT>                    vertices = new Vector2D[loops.size()][];<a name="line.620"></a>
+<FONT color="green">621</FONT>                    int i = 0;<a name="line.621"></a>
+<FONT color="green">622</FONT>    <a name="line.622"></a>
+<FONT color="green">623</FONT>                    for (final List&lt;ComparableSegment&gt; loop : loops) {<a name="line.623"></a>
+<FONT color="green">624</FONT>                        if (loop.size() &lt; 2) {<a name="line.624"></a>
+<FONT color="green">625</FONT>                            // single infinite line<a name="line.625"></a>
+<FONT color="green">626</FONT>                            final Line line = loop.get(0).getLine();<a name="line.626"></a>
+<FONT color="green">627</FONT>                            vertices[i++] = new Vector2D[] {<a name="line.627"></a>
+<FONT color="green">628</FONT>                                null,<a name="line.628"></a>
+<FONT color="green">629</FONT>                                line.toSpace(new Vector1D(-Float.MAX_VALUE)),<a name="line.629"></a>
+<FONT color="green">630</FONT>                                line.toSpace(new Vector1D(+Float.MAX_VALUE))<a name="line.630"></a>
+<FONT color="green">631</FONT>                            };<a name="line.631"></a>
+<FONT color="green">632</FONT>                        } else if (loop.get(0).getStart() == null) {<a name="line.632"></a>
+<FONT color="green">633</FONT>                            // open loop with at least one real point<a name="line.633"></a>
+<FONT color="green">634</FONT>                            final Vector2D[] array = new Vector2D[loop.size() + 2];<a name="line.634"></a>
+<FONT color="green">635</FONT>                            int j = 0;<a name="line.635"></a>
+<FONT color="green">636</FONT>                            for (Segment segment : loop) {<a name="line.636"></a>
+<FONT color="green">637</FONT>    <a name="line.637"></a>
+<FONT color="green">638</FONT>                                if (j == 0) {<a name="line.638"></a>
+<FONT color="green">639</FONT>                                    // null point and first dummy point<a name="line.639"></a>
+<FONT color="green">640</FONT>                                    double x = segment.getLine().toSubSpace(segment.getEnd()).getX();<a name="line.640"></a>
+<FONT color="green">641</FONT>                                    x -= FastMath.max(1.0, FastMath.abs(x / 2));<a name="line.641"></a>
+<FONT color="green">642</FONT>                                    array[j++] = null;<a name="line.642"></a>
+<FONT color="green">643</FONT>                                    array[j++] = segment.getLine().toSpace(new Vector1D(x));<a name="line.643"></a>
+<FONT color="green">644</FONT>                                }<a name="line.644"></a>
+<FONT color="green">645</FONT>    <a name="line.645"></a>
+<FONT color="green">646</FONT>                                if (j &lt; (array.length - 1)) {<a name="line.646"></a>
+<FONT color="green">647</FONT>                                    // current point<a name="line.647"></a>
+<FONT color="green">648</FONT>                                    array[j++] = segment.getEnd();<a name="line.648"></a>
+<FONT color="green">649</FONT>                                }<a name="line.649"></a>
+<FONT color="green">650</FONT>    <a name="line.650"></a>
+<FONT color="green">651</FONT>                                if (j == (array.length - 1)) {<a name="line.651"></a>
+<FONT color="green">652</FONT>                                    // last dummy point<a name="line.652"></a>
+<FONT color="green">653</FONT>                                    double x = segment.getLine().toSubSpace(segment.getStart()).getX();<a name="line.653"></a>
+<FONT color="green">654</FONT>                                    x += FastMath.max(1.0, FastMath.abs(x / 2));<a name="line.654"></a>
+<FONT color="green">655</FONT>                                    array[j++] = segment.getLine().toSpace(new Vector1D(x));<a name="line.655"></a>
+<FONT color="green">656</FONT>                                }<a name="line.656"></a>
+<FONT color="green">657</FONT>    <a name="line.657"></a>
+<FONT color="green">658</FONT>                            }<a name="line.658"></a>
+<FONT color="green">659</FONT>                            vertices[i++] = array;<a name="line.659"></a>
+<FONT color="green">660</FONT>                        } else {<a name="line.660"></a>
+<FONT color="green">661</FONT>                            final Vector2D[] array = new Vector2D[loop.size()];<a name="line.661"></a>
+<FONT color="green">662</FONT>                            int j = 0;<a name="line.662"></a>
+<FONT color="green">663</FONT>                            for (Segment segment : loop) {<a name="line.663"></a>
+<FONT color="green">664</FONT>                                array[j++] = segment.getStart();<a name="line.664"></a>
+<FONT color="green">665</FONT>                            }<a name="line.665"></a>
+<FONT color="green">666</FONT>                            vertices[i++] = array;<a name="line.666"></a>
+<FONT color="green">667</FONT>                        }<a name="line.667"></a>
+<FONT color="green">668</FONT>                    }<a name="line.668"></a>
+<FONT color="green">669</FONT>    <a name="line.669"></a>
+<FONT color="green">670</FONT>                }<a name="line.670"></a>
+<FONT color="green">671</FONT>            }<a name="line.671"></a>
+<FONT color="green">672</FONT>    <a name="line.672"></a>
+<FONT color="green">673</FONT>            return vertices.clone();<a name="line.673"></a>
+<FONT color="green">674</FONT>    <a name="line.674"></a>
+<FONT color="green">675</FONT>        }<a name="line.675"></a>
+<FONT color="green">676</FONT>    <a name="line.676"></a>
+<FONT color="green">677</FONT>        /** Follow a boundary loop.<a name="line.677"></a>
+<FONT color="green">678</FONT>         * @param node node containing the segment starting the loop<a name="line.678"></a>
+<FONT color="green">679</FONT>         * @param sorted set of segments belonging to the boundary, sorted by<a name="line.679"></a>
+<FONT color="green">680</FONT>         * start points (contains {@code node})<a name="line.680"></a>
+<FONT color="green">681</FONT>         * @return a list of connected sub-hyperplanes starting at<a name="line.681"></a>
+<FONT color="green">682</FONT>         * {@code node}<a name="line.682"></a>
+<FONT color="green">683</FONT>         */<a name="line.683"></a>
+<FONT color="green">684</FONT>        private List&lt;ComparableSegment&gt; followLoop(final AVLTree&lt;ComparableSegment&gt;.Node node,<a name="line.684"></a>
+<FONT color="green">685</FONT>                                                   final AVLTree&lt;ComparableSegment&gt; sorted) {<a name="line.685"></a>
+<FONT color="green">686</FONT>    <a name="line.686"></a>
+<FONT color="green">687</FONT>            final ArrayList&lt;ComparableSegment&gt; loop = new ArrayList&lt;ComparableSegment&gt;();<a name="line.687"></a>
+<FONT color="green">688</FONT>            ComparableSegment segment = node.getElement();<a name="line.688"></a>
+<FONT color="green">689</FONT>            loop.add(segment);<a name="line.689"></a>
+<FONT color="green">690</FONT>            final Vector2D globalStart = segment.getStart();<a name="line.690"></a>
+<FONT color="green">691</FONT>            Vector2D end = segment.getEnd();<a name="line.691"></a>
+<FONT color="green">692</FONT>            node.delete();<a name="line.692"></a>
+<FONT color="green">693</FONT>    <a name="line.693"></a>
+<FONT color="green">694</FONT>            // is this an open or a closed loop ?<a name="line.694"></a>
+<FONT color="green">695</FONT>            final boolean open = segment.getStart() == null;<a name="line.695"></a>
+<FONT color="green">696</FONT>    <a name="line.696"></a>
+<FONT color="green">697</FONT>            while ((end != null) &amp;&amp; (open || (globalStart.distance(end) &gt; 1.0e-10))) {<a name="line.697"></a>
+<FONT color="green">698</FONT>    <a name="line.698"></a>
+<FONT color="green">699</FONT>                // search the sub-hyperplane starting where the previous one ended<a name="line.699"></a>
+<FONT color="green">700</FONT>                AVLTree&lt;ComparableSegment&gt;.Node selectedNode = null;<a name="line.700"></a>
+<FONT color="green">701</FONT>                ComparableSegment       selectedSegment  = null;<a name="line.701"></a>
+<FONT color="green">702</FONT>                double                  selectedDistance = Double.POSITIVE_INFINITY;<a name="line.702"></a>
+<FONT color="green">703</FONT>                final ComparableSegment lowerLeft        = new ComparableSegment(end, -1.0e-10, -1.0e-10);<a name="line.703"></a>
+<FONT color="green">704</FONT>                final ComparableSegment upperRight       = new ComparableSegment(end, +1.0e-10, +1.0e-10);<a name="line.704"></a>
+<FONT color="green">705</FONT>                for (AVLTree&lt;ComparableSegment&gt;.Node n = sorted.getNotSmaller(lowerLeft);<a name="line.705"></a>
+<FONT color="green">706</FONT>                     (n != null) &amp;&amp; (n.getElement().compareTo(upperRight) &lt;= 0);<a name="line.706"></a>
+<FONT color="green">707</FONT>                     n = n.getNext()) {<a name="line.707"></a>
+<FONT color="green">708</FONT>                    segment = n.getElement();<a name="line.708"></a>
+<FONT color="green">709</FONT>                    final double distance = end.distance(segment.getStart());<a name="line.709"></a>
+<FONT color="green">710</FONT>                    if (distance &lt; selectedDistance) {<a name="line.710"></a>
+<FONT color="green">711</FONT>                        selectedNode     = n;<a name="line.711"></a>
+<FONT color="green">712</FONT>                        selectedSegment  = segment;<a name="line.712"></a>
+<FONT color="green">713</FONT>                        selectedDistance = distance;<a name="line.713"></a>
+<FONT color="green">714</FONT>                    }<a name="line.714"></a>
+<FONT color="green">715</FONT>                }<a name="line.715"></a>
+<FONT color="green">716</FONT>    <a name="line.716"></a>
+<FONT color="green">717</FONT>                if (selectedDistance &gt; 1.0e-10) {<a name="line.717"></a>
+<FONT color="green">718</FONT>                    // this is a degenerated loop, it probably comes from a very<a name="line.718"></a>
+<FONT color="green">719</FONT>                    // tiny region with some segments smaller than the threshold, we<a name="line.719"></a>
+<FONT color="green">720</FONT>                    // simply ignore it<a name="line.720"></a>
+<FONT color="green">721</FONT>                    return null;<a name="line.721"></a>
+<FONT color="green">722</FONT>                }<a name="line.722"></a>
+<FONT color="green">723</FONT>    <a name="line.723"></a>
+<FONT color="green">724</FONT>                end = selectedSegment.getEnd();<a name="line.724"></a>
+<FONT color="green">725</FONT>                loop.add(selectedSegment);<a name="line.725"></a>
+<FONT color="green">726</FONT>                selectedNode.delete();<a name="line.726"></a>
+<FONT color="green">727</FONT>    <a name="line.727"></a>
+<FONT color="green">728</FONT>            }<a name="line.728"></a>
+<FONT color="green">729</FONT>    <a name="line.729"></a>
+<FONT color="green">730</FONT>            if ((loop.size() == 2) &amp;&amp; !open) {<a name="line.730"></a>
+<FONT color="green">731</FONT>                // this is a degenerated infinitely thin loop, we simply ignore it<a name="line.731"></a>
+<FONT color="green">732</FONT>                return null;<a name="line.732"></a>
+<FONT color="green">733</FONT>            }<a name="line.733"></a>
+<FONT color="green">734</FONT>    <a name="line.734"></a>
+<FONT color="green">735</FONT>            if ((end == null) &amp;&amp; !open) {<a name="line.735"></a>
+<FONT color="green">736</FONT>                throw new MathInternalError();<a name="line.736"></a>
+<FONT color="green">737</FONT>            }<a name="line.737"></a>
+<FONT color="green">738</FONT>    <a name="line.738"></a>
+<FONT color="green">739</FONT>            return loop;<a name="line.739"></a>
+<FONT color="green">740</FONT>    <a name="line.740"></a>
+<FONT color="green">741</FONT>        }<a name="line.741"></a>
+<FONT color="green">742</FONT>    <a name="line.742"></a>
+<FONT color="green">743</FONT>        /** Private extension of Segment allowing comparison. */<a name="line.743"></a>
+<FONT color="green">744</FONT>        private static class ComparableSegment extends Segment implements Comparable&lt;ComparableSegment&gt; {<a name="line.744"></a>
+<FONT color="green">745</FONT>    <a name="line.745"></a>
+<FONT color="green">746</FONT>            /** Sorting key. */<a name="line.746"></a>
+<FONT color="green">747</FONT>            private OrderedTuple sortingKey;<a name="line.747"></a>
+<FONT color="green">748</FONT>    <a name="line.748"></a>
+<FONT color="green">749</FONT>            /** Build a segment.<a name="line.749"></a>
+<FONT color="green">750</FONT>             * @param start start point of the segment<a name="line.750"></a>
+<FONT color="green">751</FONT>             * @param end end point of the segment<a name="line.751"></a>
+<FONT color="green">752</FONT>             * @param line line containing the segment<a name="line.752"></a>
+<FONT color="green">753</FONT>             */<a name="line.753"></a>
+<FONT color="green">754</FONT>            public ComparableSegment(final Vector2D start, final Vector2D end, final Line line) {<a name="line.754"></a>
+<FONT color="green">755</FONT>                super(start, end, line);<a name="line.755"></a>
+<FONT color="green">756</FONT>                sortingKey = (start == null) ?<a name="line.756"></a>
+<FONT color="green">757</FONT>                             new OrderedTuple(Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY) :<a name="line.757"></a>
+<FONT color="green">758</FONT>                             new OrderedTuple(start.getX(), start.getY());<a name="line.758"></a>
+<FONT color="green">759</FONT>            }<a name="line.759"></a>
+<FONT color="green">760</FONT>    <a name="line.760"></a>
+<FONT color="green">761</FONT>            /** Build a dummy segment.<a name="line.761"></a>
+<FONT color="green">762</FONT>             * &lt;p&gt;<a name="line.762"></a>
+<FONT color="green">763</FONT>             * The object built is not a real segment, only the sorting key is used to<a name="line.763"></a>
+<FONT color="green">764</FONT>             * allow searching in the neighborhood of a point. This is an horrible hack ...<a name="line.764"></a>
+<FONT color="green">765</FONT>             * &lt;/p&gt;<a name="line.765"></a>
+<FONT color="green">766</FONT>             * @param start start point of the segment<a name="line.766"></a>
+<FONT color="green">767</FONT>             * @param dx abscissa offset from the start point<a name="line.767"></a>
+<FONT color="green">768</FONT>             * @param dy ordinate offset from the start point<a name="line.768"></a>
+<FONT color="green">769</FONT>             */<a name="line.769"></a>
+<FONT color="green">770</FONT>            public ComparableSegment(final Vector2D start, final double dx, final double dy) {<a name="line.770"></a>
+<FONT color="green">771</FONT>                super(null, null, null);<a name="line.771"></a>
+<FONT color="green">772</FONT>                sortingKey = new OrderedTuple(start.getX() + dx, start.getY() + dy);<a name="line.772"></a>
+<FONT color="green">773</FONT>            }<a name="line.773"></a>
+<FONT color="green">774</FONT>    <a name="line.774"></a>
+<FONT color="green">775</FONT>            /** {@inheritDoc} */<a name="line.775"></a>
+<FONT color="green">776</FONT>            public int compareTo(final ComparableSegment o) {<a name="line.776"></a>
+<FONT color="green">777</FONT>                return sortingKey.compareTo(o.sortingKey);<a name="line.777"></a>
+<FONT color="green">778</FONT>            }<a name="line.778"></a>
+<FONT color="green">779</FONT>    <a name="line.779"></a>
+<FONT color="green">780</FONT>            /** {@inheritDoc} */<a name="line.780"></a>
+<FONT color="green">781</FONT>            @Override<a name="line.781"></a>
+<FONT color="green">782</FONT>            public boolean equals(final Object other) {<a name="line.782"></a>
+<FONT color="green">783</FONT>                if (this == other) {<a name="line.783"></a>
+<FONT color="green">784</FONT>                    return true;<a name="line.784"></a>
+<FONT color="green">785</FONT>                } else if (other instanceof ComparableSegment) {<a name="line.785"></a>
+<FONT color="green">786</FONT>                    return compareTo((ComparableSegment) other) == 0;<a name="line.786"></a>
+<FONT color="green">787</FONT>                } else {<a name="line.787"></a>
+<FONT color="green">788</FONT>                    return false;<a name="line.788"></a>
+<FONT color="green">789</FONT>                }<a name="line.789"></a>
+<FONT color="green">790</FONT>            }<a name="line.790"></a>
+<FONT color="green">791</FONT>    <a name="line.791"></a>
+<FONT color="green">792</FONT>            /** {@inheritDoc} */<a name="line.792"></a>
+<FONT color="green">793</FONT>            @Override<a name="line.793"></a>
+<FONT color="green">794</FONT>            public int hashCode() {<a name="line.794"></a>
+<FONT color="green">795</FONT>                return getStart().hashCode() ^ getEnd().hashCode() ^<a name="line.795"></a>
+<FONT color="green">796</FONT>                       getLine().hashCode() ^ sortingKey.hashCode();<a name="line.796"></a>
+<FONT color="green">797</FONT>            }<a name="line.797"></a>
+<FONT color="green">798</FONT>    <a name="line.798"></a>
+<FONT color="green">799</FONT>        }<a name="line.799"></a>
+<FONT color="green">800</FONT>    <a name="line.800"></a>
+<FONT color="green">801</FONT>        /** Visitor building segments. */<a name="line.801"></a>
+<FONT color="green">802</FONT>        private static class SegmentsBuilder implements BSPTreeVisitor&lt;Euclidean2D&gt; {<a name="line.802"></a>
+<FONT color="green">803</FONT>    <a name="line.803"></a>
+<FONT color="green">804</FONT>            /** Sorted segments. */<a name="line.804"></a>
+<FONT color="green">805</FONT>            private AVLTree&lt;ComparableSegment&gt; sorted;<a name="line.805"></a>
+<FONT color="green">806</FONT>    <a name="line.806"></a>
+<FONT color="green">807</FONT>            /** Simple constructor. */<a name="line.807"></a>
+<FONT color="green">808</FONT>            public SegmentsBuilder() {<a name="line.808"></a>
+<FONT color="green">809</FONT>                sorted = new AVLTree&lt;ComparableSegment&gt;();<a name="line.809"></a>
+<FONT color="green">810</FONT>            }<a name="line.810"></a>
+<FONT color="green">811</FONT>    <a name="line.811"></a>
+<FONT color="green">812</FONT>            /** {@inheritDoc} */<a name="line.812"></a>
+<FONT color="green">813</FONT>            public Order visitOrder(final BSPTree&lt;Euclidean2D&gt; node) {<a name="line.813"></a>
+<FONT color="green">814</FONT>                return Order.MINUS_SUB_PLUS;<a name="line.814"></a>
+<FONT color="green">815</FONT>            }<a name="line.815"></a>
+<FONT color="green">816</FONT>    <a name="line.816"></a>
+<FONT color="green">817</FONT>            /** {@inheritDoc} */<a name="line.817"></a>
+<FONT color="green">818</FONT>            public void visitInternalNode(final BSPTree&lt;Euclidean2D&gt; node) {<a name="line.818"></a>
+<FONT color="green">819</FONT>                @SuppressWarnings("unchecked")<a name="line.819"></a>
+<FONT color="green">820</FONT>                final BoundaryAttribute&lt;Euclidean2D&gt; attribute = (BoundaryAttribute&lt;Euclidean2D&gt;) node.getAttribute();<a name="line.820"></a>
+<FONT color="green">821</FONT>                if (attribute.getPlusOutside() != null) {<a name="line.821"></a>
+<FONT color="green">822</FONT>                    addContribution(attribute.getPlusOutside(), false);<a name="line.822"></a>
+<FONT color="green">823</FONT>                }<a name="line.823"></a>
+<FONT color="green">824</FONT>                if (attribute.getPlusInside() != null) {<a name="line.824"></a>
+<FONT color="green">825</FONT>                    addContribution(attribute.getPlusInside(), true);<a name="line.825"></a>
+<FONT color="green">826</FONT>                }<a name="line.826"></a>
+<FONT color="green">827</FONT>            }<a name="line.827"></a>
+<FONT color="green">828</FONT>    <a name="line.828"></a>
+<FONT color="green">829</FONT>            /** {@inheritDoc} */<a name="line.829"></a>
+<FONT color="green">830</FONT>            public void visitLeafNode(final BSPTree&lt;Euclidean2D&gt; node) {<a name="line.830"></a>
+<FONT color="green">831</FONT>            }<a name="line.831"></a>
+<FONT color="green">832</FONT>    <a name="line.832"></a>
+<FONT color="green">833</FONT>            /** Add he contribution of a boundary facet.<a name="line.833"></a>
+<FONT color="green">834</FONT>             * @param sub boundary facet<a name="line.834"></a>
+<FONT color="green">835</FONT>             * @param reversed if true, the facet has the inside on its plus side<a name="line.835"></a>
+<FONT color="green">836</FONT>             */<a name="line.836"></a>
+<FONT color="green">837</FONT>            private void addContribution(final SubHyperplane&lt;Euclidean2D&gt; sub, final boolean reversed) {<a name="line.837"></a>
+<FONT color="green">838</FONT>                @SuppressWarnings("unchecked")<a name="line.838"></a>
+<FONT color="green">839</FONT>                final AbstractSubHyperplane&lt;Euclidean2D, Euclidean1D&gt; absSub =<a name="line.839"></a>
+<FONT color="green">840</FONT>                    (AbstractSubHyperplane&lt;Euclidean2D, Euclidean1D&gt;) sub;<a name="line.840"></a>
+<FONT color="green">841</FONT>                final Line line      = (Line) sub.getHyperplane();<a name="line.841"></a>
+<FONT color="green">842</FONT>                final List&lt;Interval&gt; intervals = ((IntervalsSet) absSub.getRemainingRegion()).asList();<a name="line.842"></a>
+<FONT color="green">843</FONT>                for (final Interval i : intervals) {<a name="line.843"></a>
+<FONT color="green">844</FONT>                    final Vector2D start = Double.isInfinite(i.getInf()) ?<a name="line.844"></a>
+<FONT color="green">845</FONT>                                          null : (Vector2D) line.toSpace(new Vector1D(i.getInf()));<a name="line.845"></a>
+<FONT color="green">846</FONT>                    final Vector2D end   = Double.isInfinite(i.getSup()) ?<a name="line.846"></a>
+<FONT color="green">847</FONT>                                          null : (Vector2D) line.toSpace(new Vector1D(i.getSup()));<a name="line.847"></a>
+<FONT color="green">848</FONT>                    if (reversed) {<a name="line.848"></a>
+<FONT color="green">849</FONT>                        sorted.insert(new ComparableSegment(end, start, line.getReverse()));<a name="line.849"></a>
+<FONT color="green">850</FONT>                    } else {<a name="line.850"></a>
+<FONT color="green">851</FONT>                        sorted.insert(new ComparableSegment(start, end, line));<a name="line.851"></a>
+<FONT color="green">852</FONT>                    }<a name="line.852"></a>
+<FONT color="green">853</FONT>                }<a name="line.853"></a>
+<FONT color="green">854</FONT>            }<a name="line.854"></a>
+<FONT color="green">855</FONT>    <a name="line.855"></a>
+<FONT color="green">856</FONT>            /** Get the sorted segments.<a name="line.856"></a>
+<FONT color="green">857</FONT>             * @return sorted segments<a name="line.857"></a>
+<FONT color="green">858</FONT>             */<a name="line.858"></a>
+<FONT color="green">859</FONT>            public AVLTree&lt;ComparableSegment&gt; getSorted() {<a name="line.859"></a>
+<FONT color="green">860</FONT>                return sorted;<a name="line.860"></a>
+<FONT color="green">861</FONT>            }<a name="line.861"></a>
+<FONT color="green">862</FONT>    <a name="line.862"></a>
+<FONT color="green">863</FONT>        }<a name="line.863"></a>
+<FONT color="green">864</FONT>    <a name="line.864"></a>
+<FONT color="green">865</FONT>    }<a name="line.865"></a>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</PRE>
+</BODY>
+</HTML>

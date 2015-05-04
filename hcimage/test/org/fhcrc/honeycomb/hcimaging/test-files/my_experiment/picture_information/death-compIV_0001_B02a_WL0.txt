@@ -1,0 +1,13 @@
+Date	1/12/2011
+Time	11:22 AM
+Exposure	0.050000
+Binning	1X1
+Filter_Cube	BF
+Analog_Gain	1X
+X_position	-3950.000000
+Y_position	-8543.000000
+Z_position	-44.000000
+x_dimension	1040
+y_dimension	1392
+iris_setting	144
+brightness (percent)	100

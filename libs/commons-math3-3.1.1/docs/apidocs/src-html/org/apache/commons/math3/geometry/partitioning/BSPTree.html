@@ -1,0 +1,701 @@
+<HTML>
+<BODY BGCOLOR="white">
+<PRE>
+<FONT color="green">001</FONT>    /*<a name="line.1"></a>
+<FONT color="green">002</FONT>     * Licensed to the Apache Software Foundation (ASF) under one or more<a name="line.2"></a>
+<FONT color="green">003</FONT>     * contributor license agreements.  See the NOTICE file distributed with<a name="line.3"></a>
+<FONT color="green">004</FONT>     * this work for additional information regarding copyright ownership.<a name="line.4"></a>
+<FONT color="green">005</FONT>     * The ASF licenses this file to You under the Apache License, Version 2.0<a name="line.5"></a>
+<FONT color="green">006</FONT>     * (the "License"); you may not use this file except in compliance with<a name="line.6"></a>
+<FONT color="green">007</FONT>     * the License.  You may obtain a copy of the License at<a name="line.7"></a>
+<FONT color="green">008</FONT>     *<a name="line.8"></a>
+<FONT color="green">009</FONT>     *      http://www.apache.org/licenses/LICENSE-2.0<a name="line.9"></a>
+<FONT color="green">010</FONT>     *<a name="line.10"></a>
+<FONT color="green">011</FONT>     * Unless required by applicable law or agreed to in writing, software<a name="line.11"></a>
+<FONT color="green">012</FONT>     * distributed under the License is distributed on an "AS IS" BASIS,<a name="line.12"></a>
+<FONT color="green">013</FONT>     * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.<a name="line.13"></a>
+<FONT color="green">014</FONT>     * See the License for the specific language governing permissions and<a name="line.14"></a>
+<FONT color="green">015</FONT>     * limitations under the License.<a name="line.15"></a>
+<FONT color="green">016</FONT>     */<a name="line.16"></a>
+<FONT color="green">017</FONT>    package org.apache.commons.math3.geometry.partitioning;<a name="line.17"></a>
+<FONT color="green">018</FONT>    <a name="line.18"></a>
+<FONT color="green">019</FONT>    import org.apache.commons.math3.exception.MathInternalError;<a name="line.19"></a>
+<FONT color="green">020</FONT>    import org.apache.commons.math3.geometry.Vector;<a name="line.20"></a>
+<FONT color="green">021</FONT>    import org.apache.commons.math3.geometry.Space;<a name="line.21"></a>
+<FONT color="green">022</FONT>    import org.apache.commons.math3.util.FastMath;<a name="line.22"></a>
+<FONT color="green">023</FONT>    <a name="line.23"></a>
+<FONT color="green">024</FONT>    /** This class represent a Binary Space Partition tree.<a name="line.24"></a>
+<FONT color="green">025</FONT>    <a name="line.25"></a>
+<FONT color="green">026</FONT>     * &lt;p&gt;BSP trees are an efficient way to represent space partitions and<a name="line.26"></a>
+<FONT color="green">027</FONT>     * to associate attributes with each cell. Each node in a BSP tree<a name="line.27"></a>
+<FONT color="green">028</FONT>     * represents a convex region which is partitioned in two convex<a name="line.28"></a>
+<FONT color="green">029</FONT>     * sub-regions at each side of a cut hyperplane. The root tree<a name="line.29"></a>
+<FONT color="green">030</FONT>     * contains the complete space.&lt;/p&gt;<a name="line.30"></a>
+<FONT color="green">031</FONT>    <a name="line.31"></a>
+<FONT color="green">032</FONT>     * &lt;p&gt;The main use of such partitions is to use a boolean attribute to<a name="line.32"></a>
+<FONT color="green">033</FONT>     * define an inside/outside property, hence representing arbitrary<a name="line.33"></a>
+<FONT color="green">034</FONT>     * polytopes (line segments in 1D, polygons in 2D and polyhedrons in<a name="line.34"></a>
+<FONT color="green">035</FONT>     * 3D) and to operate on them.&lt;/p&gt;<a name="line.35"></a>
+<FONT color="green">036</FONT>    <a name="line.36"></a>
+<FONT color="green">037</FONT>     * &lt;p&gt;Another example would be to represent Voronoi tesselations, the<a name="line.37"></a>
+<FONT color="green">038</FONT>     * attribute of each cell holding the defining point of the cell.&lt;/p&gt;<a name="line.38"></a>
+<FONT color="green">039</FONT>    <a name="line.39"></a>
+<FONT color="green">040</FONT>     * &lt;p&gt;The application-defined attributes are shared among copied<a name="line.40"></a>
+<FONT color="green">041</FONT>     * instances and propagated to split parts. These attributes are not<a name="line.41"></a>
+<FONT color="green">042</FONT>     * used by the BSP-tree algorithms themselves, so the application can<a name="line.42"></a>
+<FONT color="green">043</FONT>     * use them for any purpose. Since the tree visiting method holds<a name="line.43"></a>
+<FONT color="green">044</FONT>     * internal and leaf nodes differently, it is possible to use<a name="line.44"></a>
+<FONT color="green">045</FONT>     * different classes for internal nodes attributes and leaf nodes<a name="line.45"></a>
+<FONT color="green">046</FONT>     * attributes. This should be used with care, though, because if the<a name="line.46"></a>
+<FONT color="green">047</FONT>     * tree is modified in any way after attributes have been set, some<a name="line.47"></a>
+<FONT color="green">048</FONT>     * internal nodes may become leaf nodes and some leaf nodes may become<a name="line.48"></a>
+<FONT color="green">049</FONT>     * internal nodes.&lt;/p&gt;<a name="line.49"></a>
+<FONT color="green">050</FONT>    <a name="line.50"></a>
+<FONT color="green">051</FONT>     * &lt;p&gt;One of the main sources for the development of this package was<a name="line.51"></a>
+<FONT color="green">052</FONT>     * Bruce Naylor, John Amanatides and William Thibault paper &lt;a<a name="line.52"></a>
+<FONT color="green">053</FONT>     * href="http://www.cs.yorku.ca/~amana/research/bsptSetOp.pdf"&gt;Merging<a name="line.53"></a>
+<FONT color="green">054</FONT>     * BSP Trees Yields Polyhedral Set Operations&lt;/a&gt; Proc. Siggraph '90,<a name="line.54"></a>
+<FONT color="green">055</FONT>     * Computer Graphics 24(4), August 1990, pp 115-124, published by the<a name="line.55"></a>
+<FONT color="green">056</FONT>     * Association for Computing Machinery (ACM).&lt;/p&gt;<a name="line.56"></a>
+<FONT color="green">057</FONT>    <a name="line.57"></a>
+<FONT color="green">058</FONT>     * @param &lt;S&gt; Type of the space.<a name="line.58"></a>
+<FONT color="green">059</FONT>    <a name="line.59"></a>
+<FONT color="green">060</FONT>     * @version $Id: BSPTree.java 1416643 2012-12-03 19:37:14Z tn $<a name="line.60"></a>
+<FONT color="green">061</FONT>     * @since 3.0<a name="line.61"></a>
+<FONT color="green">062</FONT>     */<a name="line.62"></a>
+<FONT color="green">063</FONT>    public class BSPTree&lt;S extends Space&gt; {<a name="line.63"></a>
+<FONT color="green">064</FONT>    <a name="line.64"></a>
+<FONT color="green">065</FONT>        /** Cut sub-hyperplane. */<a name="line.65"></a>
+<FONT color="green">066</FONT>        private SubHyperplane&lt;S&gt; cut;<a name="line.66"></a>
+<FONT color="green">067</FONT>    <a name="line.67"></a>
+<FONT color="green">068</FONT>        /** Tree at the plus side of the cut hyperplane. */<a name="line.68"></a>
+<FONT color="green">069</FONT>        private BSPTree&lt;S&gt; plus;<a name="line.69"></a>
+<FONT color="green">070</FONT>    <a name="line.70"></a>
+<FONT color="green">071</FONT>        /** Tree at the minus side of the cut hyperplane. */<a name="line.71"></a>
+<FONT color="green">072</FONT>        private BSPTree&lt;S&gt; minus;<a name="line.72"></a>
+<FONT color="green">073</FONT>    <a name="line.73"></a>
+<FONT color="green">074</FONT>        /** Parent tree. */<a name="line.74"></a>
+<FONT color="green">075</FONT>        private BSPTree&lt;S&gt; parent;<a name="line.75"></a>
+<FONT color="green">076</FONT>    <a name="line.76"></a>
+<FONT color="green">077</FONT>        /** Application-defined attribute. */<a name="line.77"></a>
+<FONT color="green">078</FONT>        private Object attribute;<a name="line.78"></a>
+<FONT color="green">079</FONT>    <a name="line.79"></a>
+<FONT color="green">080</FONT>        /** Build a tree having only one root cell representing the whole space.<a name="line.80"></a>
+<FONT color="green">081</FONT>         */<a name="line.81"></a>
+<FONT color="green">082</FONT>        public BSPTree() {<a name="line.82"></a>
+<FONT color="green">083</FONT>            cut       = null;<a name="line.83"></a>
+<FONT color="green">084</FONT>            plus      = null;<a name="line.84"></a>
+<FONT color="green">085</FONT>            minus     = null;<a name="line.85"></a>
+<FONT color="green">086</FONT>            parent    = null;<a name="line.86"></a>
+<FONT color="green">087</FONT>            attribute = null;<a name="line.87"></a>
+<FONT color="green">088</FONT>        }<a name="line.88"></a>
+<FONT color="green">089</FONT>    <a name="line.89"></a>
+<FONT color="green">090</FONT>        /** Build a tree having only one root cell representing the whole space.<a name="line.90"></a>
+<FONT color="green">091</FONT>         * @param attribute attribute of the tree (may be null)<a name="line.91"></a>
+<FONT color="green">092</FONT>         */<a name="line.92"></a>
+<FONT color="green">093</FONT>        public BSPTree(final Object attribute) {<a name="line.93"></a>
+<FONT color="green">094</FONT>            cut    = null;<a name="line.94"></a>
+<FONT color="green">095</FONT>            plus   = null;<a name="line.95"></a>
+<FONT color="green">096</FONT>            minus  = null;<a name="line.96"></a>
+<FONT color="green">097</FONT>            parent = null;<a name="line.97"></a>
+<FONT color="green">098</FONT>            this.attribute = attribute;<a name="line.98"></a>
+<FONT color="green">099</FONT>        }<a name="line.99"></a>
+<FONT color="green">100</FONT>    <a name="line.100"></a>
+<FONT color="green">101</FONT>        /** Build a BSPTree from its underlying elements.<a name="line.101"></a>
+<FONT color="green">102</FONT>         * &lt;p&gt;This method does &lt;em&gt;not&lt;/em&gt; perform any verification on<a name="line.102"></a>
+<FONT color="green">103</FONT>         * consistency of its arguments, it should therefore be used only<a name="line.103"></a>
+<FONT color="green">104</FONT>         * when then caller knows what it is doing.&lt;/p&gt;<a name="line.104"></a>
+<FONT color="green">105</FONT>         * &lt;p&gt;This method is mainly useful kto build trees<a name="line.105"></a>
+<FONT color="green">106</FONT>         * bottom-up. Building trees top-down is realized with the help of<a name="line.106"></a>
+<FONT color="green">107</FONT>         * method {@link #insertCut insertCut}.&lt;/p&gt;<a name="line.107"></a>
+<FONT color="green">108</FONT>         * @param cut cut sub-hyperplane for the tree<a name="line.108"></a>
+<FONT color="green">109</FONT>         * @param plus plus side sub-tree<a name="line.109"></a>
+<FONT color="green">110</FONT>         * @param minus minus side sub-tree<a name="line.110"></a>
+<FONT color="green">111</FONT>         * @param attribute attribute associated with the node (may be null)<a name="line.111"></a>
+<FONT color="green">112</FONT>         * @see #insertCut<a name="line.112"></a>
+<FONT color="green">113</FONT>         */<a name="line.113"></a>
+<FONT color="green">114</FONT>        public BSPTree(final SubHyperplane&lt;S&gt; cut, final BSPTree&lt;S&gt; plus, final BSPTree&lt;S&gt; minus,<a name="line.114"></a>
+<FONT color="green">115</FONT>                       final Object attribute) {<a name="line.115"></a>
+<FONT color="green">116</FONT>            this.cut       = cut;<a name="line.116"></a>
+<FONT color="green">117</FONT>            this.plus      = plus;<a name="line.117"></a>
+<FONT color="green">118</FONT>            this.minus     = minus;<a name="line.118"></a>
+<FONT color="green">119</FONT>            this.parent    = null;<a name="line.119"></a>
+<FONT color="green">120</FONT>            this.attribute = attribute;<a name="line.120"></a>
+<FONT color="green">121</FONT>            plus.parent    = this;<a name="line.121"></a>
+<FONT color="green">122</FONT>            minus.parent   = this;<a name="line.122"></a>
+<FONT color="green">123</FONT>        }<a name="line.123"></a>
+<FONT color="green">124</FONT>    <a name="line.124"></a>
+<FONT color="green">125</FONT>        /** Insert a cut sub-hyperplane in a node.<a name="line.125"></a>
+<FONT color="green">126</FONT>         * &lt;p&gt;The sub-tree starting at this node will be completely<a name="line.126"></a>
+<FONT color="green">127</FONT>         * overwritten. The new cut sub-hyperplane will be built from the<a name="line.127"></a>
+<FONT color="green">128</FONT>         * intersection of the provided hyperplane with the cell. If the<a name="line.128"></a>
+<FONT color="green">129</FONT>         * hyperplane does intersect the cell, the cell will have two<a name="line.129"></a>
+<FONT color="green">130</FONT>         * children cells with {@code null} attributes on each side of<a name="line.130"></a>
+<FONT color="green">131</FONT>         * the inserted cut sub-hyperplane. If the hyperplane does not<a name="line.131"></a>
+<FONT color="green">132</FONT>         * intersect the cell then &lt;em&gt;no&lt;/em&gt; cut hyperplane will be<a name="line.132"></a>
+<FONT color="green">133</FONT>         * inserted and the cell will be changed to a leaf cell. The<a name="line.133"></a>
+<FONT color="green">134</FONT>         * attribute of the node is never changed.&lt;/p&gt;<a name="line.134"></a>
+<FONT color="green">135</FONT>         * &lt;p&gt;This method is mainly useful when called on leaf nodes<a name="line.135"></a>
+<FONT color="green">136</FONT>         * (i.e. nodes for which {@link #getCut getCut} returns<a name="line.136"></a>
+<FONT color="green">137</FONT>         * {@code null}), in this case it provides a way to build a<a name="line.137"></a>
+<FONT color="green">138</FONT>         * tree top-down (whereas the {@link #BSPTree(SubHyperplane,<a name="line.138"></a>
+<FONT color="green">139</FONT>         * BSPTree, BSPTree, Object) 4 arguments constructor} is devoted to<a name="line.139"></a>
+<FONT color="green">140</FONT>         * build trees bottom-up).&lt;/p&gt;<a name="line.140"></a>
+<FONT color="green">141</FONT>         * @param hyperplane hyperplane to insert, it will be chopped in<a name="line.141"></a>
+<FONT color="green">142</FONT>         * order to fit in the cell defined by the parent nodes of the<a name="line.142"></a>
+<FONT color="green">143</FONT>         * instance<a name="line.143"></a>
+<FONT color="green">144</FONT>         * @return true if a cut sub-hyperplane has been inserted (i.e. if<a name="line.144"></a>
+<FONT color="green">145</FONT>         * the cell now has two leaf child nodes)<a name="line.145"></a>
+<FONT color="green">146</FONT>         * @see #BSPTree(SubHyperplane, BSPTree, BSPTree, Object)<a name="line.146"></a>
+<FONT color="green">147</FONT>         */<a name="line.147"></a>
+<FONT color="green">148</FONT>        public boolean insertCut(final Hyperplane&lt;S&gt; hyperplane) {<a name="line.148"></a>
+<FONT color="green">149</FONT>    <a name="line.149"></a>
+<FONT color="green">150</FONT>            if (cut != null) {<a name="line.150"></a>
+<FONT color="green">151</FONT>                plus.parent  = null;<a name="line.151"></a>
+<FONT color="green">152</FONT>                minus.parent = null;<a name="line.152"></a>
+<FONT color="green">153</FONT>            }<a name="line.153"></a>
+<FONT color="green">154</FONT>    <a name="line.154"></a>
+<FONT color="green">155</FONT>            final SubHyperplane&lt;S&gt; chopped = fitToCell(hyperplane.wholeHyperplane());<a name="line.155"></a>
+<FONT color="green">156</FONT>            if (chopped == null || chopped.isEmpty()) {<a name="line.156"></a>
+<FONT color="green">157</FONT>                cut          = null;<a name="line.157"></a>
+<FONT color="green">158</FONT>                plus         = null;<a name="line.158"></a>
+<FONT color="green">159</FONT>                minus        = null;<a name="line.159"></a>
+<FONT color="green">160</FONT>                return false;<a name="line.160"></a>
+<FONT color="green">161</FONT>            }<a name="line.161"></a>
+<FONT color="green">162</FONT>    <a name="line.162"></a>
+<FONT color="green">163</FONT>            cut          = chopped;<a name="line.163"></a>
+<FONT color="green">164</FONT>            plus         = new BSPTree&lt;S&gt;();<a name="line.164"></a>
+<FONT color="green">165</FONT>            plus.parent  = this;<a name="line.165"></a>
+<FONT color="green">166</FONT>            minus        = new BSPTree&lt;S&gt;();<a name="line.166"></a>
+<FONT color="green">167</FONT>            minus.parent = this;<a name="line.167"></a>
+<FONT color="green">168</FONT>            return true;<a name="line.168"></a>
+<FONT color="green">169</FONT>    <a name="line.169"></a>
+<FONT color="green">170</FONT>        }<a name="line.170"></a>
+<FONT color="green">171</FONT>    <a name="line.171"></a>
+<FONT color="green">172</FONT>        /** Copy the instance.<a name="line.172"></a>
+<FONT color="green">173</FONT>         * &lt;p&gt;The instance created is completely independant of the original<a name="line.173"></a>
+<FONT color="green">174</FONT>         * one. A deep copy is used, none of the underlying objects are<a name="line.174"></a>
+<FONT color="green">175</FONT>         * shared (except for the nodes attributes and immutable<a name="line.175"></a>
+<FONT color="green">176</FONT>         * objects).&lt;/p&gt;<a name="line.176"></a>
+<FONT color="green">177</FONT>         * @return a new tree, copy of the instance<a name="line.177"></a>
+<FONT color="green">178</FONT>         */<a name="line.178"></a>
+<FONT color="green">179</FONT>        public BSPTree&lt;S&gt; copySelf() {<a name="line.179"></a>
+<FONT color="green">180</FONT>    <a name="line.180"></a>
+<FONT color="green">181</FONT>            if (cut == null) {<a name="line.181"></a>
+<FONT color="green">182</FONT>                return new BSPTree&lt;S&gt;(attribute);<a name="line.182"></a>
+<FONT color="green">183</FONT>            }<a name="line.183"></a>
+<FONT color="green">184</FONT>    <a name="line.184"></a>
+<FONT color="green">185</FONT>            return new BSPTree&lt;S&gt;(cut.copySelf(), plus.copySelf(), minus.copySelf(),<a name="line.185"></a>
+<FONT color="green">186</FONT>                               attribute);<a name="line.186"></a>
+<FONT color="green">187</FONT>    <a name="line.187"></a>
+<FONT color="green">188</FONT>        }<a name="line.188"></a>
+<FONT color="green">189</FONT>    <a name="line.189"></a>
+<FONT color="green">190</FONT>        /** Get the cut sub-hyperplane.<a name="line.190"></a>
+<FONT color="green">191</FONT>         * @return cut sub-hyperplane, null if this is a leaf tree<a name="line.191"></a>
+<FONT color="green">192</FONT>         */<a name="line.192"></a>
+<FONT color="green">193</FONT>        public SubHyperplane&lt;S&gt; getCut() {<a name="line.193"></a>
+<FONT color="green">194</FONT>            return cut;<a name="line.194"></a>
+<FONT color="green">195</FONT>        }<a name="line.195"></a>
+<FONT color="green">196</FONT>    <a name="line.196"></a>
+<FONT color="green">197</FONT>        /** Get the tree on the plus side of the cut hyperplane.<a name="line.197"></a>
+<FONT color="green">198</FONT>         * @return tree on the plus side of the cut hyperplane, null if this<a name="line.198"></a>
+<FONT color="green">199</FONT>         * is a leaf tree<a name="line.199"></a>
+<FONT color="green">200</FONT>         */<a name="line.200"></a>
+<FONT color="green">201</FONT>        public BSPTree&lt;S&gt; getPlus() {<a name="line.201"></a>
+<FONT color="green">202</FONT>            return plus;<a name="line.202"></a>
+<FONT color="green">203</FONT>        }<a name="line.203"></a>
+<FONT color="green">204</FONT>    <a name="line.204"></a>
+<FONT color="green">205</FONT>        /** Get the tree on the minus side of the cut hyperplane.<a name="line.205"></a>
+<FONT color="green">206</FONT>         * @return tree on the minus side of the cut hyperplane, null if this<a name="line.206"></a>
+<FONT color="green">207</FONT>         * is a leaf tree<a name="line.207"></a>
+<FONT color="green">208</FONT>         */<a name="line.208"></a>
+<FONT color="green">209</FONT>        public BSPTree&lt;S&gt; getMinus() {<a name="line.209"></a>
+<FONT color="green">210</FONT>            return minus;<a name="line.210"></a>
+<FONT color="green">211</FONT>        }<a name="line.211"></a>
+<FONT color="green">212</FONT>    <a name="line.212"></a>
+<FONT color="green">213</FONT>        /** Get the parent node.<a name="line.213"></a>
+<FONT color="green">214</FONT>         * @return parent node, null if the node has no parents<a name="line.214"></a>
+<FONT color="green">215</FONT>         */<a name="line.215"></a>
+<FONT color="green">216</FONT>        public BSPTree&lt;S&gt; getParent() {<a name="line.216"></a>
+<FONT color="green">217</FONT>            return parent;<a name="line.217"></a>
+<FONT color="green">218</FONT>        }<a name="line.218"></a>
+<FONT color="green">219</FONT>    <a name="line.219"></a>
+<FONT color="green">220</FONT>        /** Associate an attribute with the instance.<a name="line.220"></a>
+<FONT color="green">221</FONT>         * @param attribute attribute to associate with the node<a name="line.221"></a>
+<FONT color="green">222</FONT>         * @see #getAttribute<a name="line.222"></a>
+<FONT color="green">223</FONT>         */<a name="line.223"></a>
+<FONT color="green">224</FONT>        public void setAttribute(final Object attribute) {<a name="line.224"></a>
+<FONT color="green">225</FONT>            this.attribute = attribute;<a name="line.225"></a>
+<FONT color="green">226</FONT>        }<a name="line.226"></a>
+<FONT color="green">227</FONT>    <a name="line.227"></a>
+<FONT color="green">228</FONT>        /** Get the attribute associated with the instance.<a name="line.228"></a>
+<FONT color="green">229</FONT>         * @return attribute associated with the node or null if no<a name="line.229"></a>
+<FONT color="green">230</FONT>         * attribute has been explicitly set using the {@link #setAttribute<a name="line.230"></a>
+<FONT color="green">231</FONT>         * setAttribute} method<a name="line.231"></a>
+<FONT color="green">232</FONT>         * @see #setAttribute<a name="line.232"></a>
+<FONT color="green">233</FONT>         */<a name="line.233"></a>
+<FONT color="green">234</FONT>        public Object getAttribute() {<a name="line.234"></a>
+<FONT color="green">235</FONT>            return attribute;<a name="line.235"></a>
+<FONT color="green">236</FONT>        }<a name="line.236"></a>
+<FONT color="green">237</FONT>    <a name="line.237"></a>
+<FONT color="green">238</FONT>        /** Visit the BSP tree nodes.<a name="line.238"></a>
+<FONT color="green">239</FONT>         * @param visitor object visiting the tree nodes<a name="line.239"></a>
+<FONT color="green">240</FONT>         */<a name="line.240"></a>
+<FONT color="green">241</FONT>        public void visit(final BSPTreeVisitor&lt;S&gt; visitor) {<a name="line.241"></a>
+<FONT color="green">242</FONT>            if (cut == null) {<a name="line.242"></a>
+<FONT color="green">243</FONT>                visitor.visitLeafNode(this);<a name="line.243"></a>
+<FONT color="green">244</FONT>            } else {<a name="line.244"></a>
+<FONT color="green">245</FONT>                switch (visitor.visitOrder(this)) {<a name="line.245"></a>
+<FONT color="green">246</FONT>                case PLUS_MINUS_SUB:<a name="line.246"></a>
+<FONT color="green">247</FONT>                    plus.visit(visitor);<a name="line.247"></a>
+<FONT color="green">248</FONT>                    minus.visit(visitor);<a name="line.248"></a>
+<FONT color="green">249</FONT>                    visitor.visitInternalNode(this);<a name="line.249"></a>
+<FONT color="green">250</FONT>                    break;<a name="line.250"></a>
+<FONT color="green">251</FONT>                case PLUS_SUB_MINUS:<a name="line.251"></a>
+<FONT color="green">252</FONT>                    plus.visit(visitor);<a name="line.252"></a>
+<FONT color="green">253</FONT>                    visitor.visitInternalNode(this);<a name="line.253"></a>
+<FONT color="green">254</FONT>                    minus.visit(visitor);<a name="line.254"></a>
+<FONT color="green">255</FONT>                    break;<a name="line.255"></a>
+<FONT color="green">256</FONT>                case MINUS_PLUS_SUB:<a name="line.256"></a>
+<FONT color="green">257</FONT>                    minus.visit(visitor);<a name="line.257"></a>
+<FONT color="green">258</FONT>                    plus.visit(visitor);<a name="line.258"></a>
+<FONT color="green">259</FONT>                    visitor.visitInternalNode(this);<a name="line.259"></a>
+<FONT color="green">260</FONT>                    break;<a name="line.260"></a>
+<FONT color="green">261</FONT>                case MINUS_SUB_PLUS:<a name="line.261"></a>
+<FONT color="green">262</FONT>                    minus.visit(visitor);<a name="line.262"></a>
+<FONT color="green">263</FONT>                    visitor.visitInternalNode(this);<a name="line.263"></a>
+<FONT color="green">264</FONT>                    plus.visit(visitor);<a name="line.264"></a>
+<FONT color="green">265</FONT>                    break;<a name="line.265"></a>
+<FONT color="green">266</FONT>                case SUB_PLUS_MINUS:<a name="line.266"></a>
+<FONT color="green">267</FONT>                    visitor.visitInternalNode(this);<a name="line.267"></a>
+<FONT color="green">268</FONT>                    plus.visit(visitor);<a name="line.268"></a>
+<FONT color="green">269</FONT>                    minus.visit(visitor);<a name="line.269"></a>
+<FONT color="green">270</FONT>                    break;<a name="line.270"></a>
+<FONT color="green">271</FONT>                case SUB_MINUS_PLUS:<a name="line.271"></a>
+<FONT color="green">272</FONT>                    visitor.visitInternalNode(this);<a name="line.272"></a>
+<FONT color="green">273</FONT>                    minus.visit(visitor);<a name="line.273"></a>
+<FONT color="green">274</FONT>                    plus.visit(visitor);<a name="line.274"></a>
+<FONT color="green">275</FONT>                    break;<a name="line.275"></a>
+<FONT color="green">276</FONT>                default:<a name="line.276"></a>
+<FONT color="green">277</FONT>                    throw new MathInternalError();<a name="line.277"></a>
+<FONT color="green">278</FONT>                }<a name="line.278"></a>
+<FONT color="green">279</FONT>    <a name="line.279"></a>
+<FONT color="green">280</FONT>            }<a name="line.280"></a>
+<FONT color="green">281</FONT>        }<a name="line.281"></a>
+<FONT color="green">282</FONT>    <a name="line.282"></a>
+<FONT color="green">283</FONT>        /** Fit a sub-hyperplane inside the cell defined by the instance.<a name="line.283"></a>
+<FONT color="green">284</FONT>         * &lt;p&gt;Fitting is done by chopping off the parts of the<a name="line.284"></a>
+<FONT color="green">285</FONT>         * sub-hyperplane that lie outside of the cell using the<a name="line.285"></a>
+<FONT color="green">286</FONT>         * cut-hyperplanes of the parent nodes of the instance.&lt;/p&gt;<a name="line.286"></a>
+<FONT color="green">287</FONT>         * @param sub sub-hyperplane to fit<a name="line.287"></a>
+<FONT color="green">288</FONT>         * @return a new sub-hyperplane, guaranteed to have no part outside<a name="line.288"></a>
+<FONT color="green">289</FONT>         * of the instance cell<a name="line.289"></a>
+<FONT color="green">290</FONT>         */<a name="line.290"></a>
+<FONT color="green">291</FONT>        private SubHyperplane&lt;S&gt; fitToCell(final SubHyperplane&lt;S&gt; sub) {<a name="line.291"></a>
+<FONT color="green">292</FONT>            SubHyperplane&lt;S&gt; s = sub;<a name="line.292"></a>
+<FONT color="green">293</FONT>            for (BSPTree&lt;S&gt; tree = this; tree.parent != null; tree = tree.parent) {<a name="line.293"></a>
+<FONT color="green">294</FONT>                if (tree == tree.parent.plus) {<a name="line.294"></a>
+<FONT color="green">295</FONT>                    s = s.split(tree.parent.cut.getHyperplane()).getPlus();<a name="line.295"></a>
+<FONT color="green">296</FONT>                } else {<a name="line.296"></a>
+<FONT color="green">297</FONT>                    s = s.split(tree.parent.cut.getHyperplane()).getMinus();<a name="line.297"></a>
+<FONT color="green">298</FONT>                }<a name="line.298"></a>
+<FONT color="green">299</FONT>            }<a name="line.299"></a>
+<FONT color="green">300</FONT>            return s;<a name="line.300"></a>
+<FONT color="green">301</FONT>        }<a name="line.301"></a>
+<FONT color="green">302</FONT>    <a name="line.302"></a>
+<FONT color="green">303</FONT>        /** Get the cell to which a point belongs.<a name="line.303"></a>
+<FONT color="green">304</FONT>         * &lt;p&gt;If the returned cell is a leaf node the points belongs to the<a name="line.304"></a>
+<FONT color="green">305</FONT>         * interior of the node, if the cell is an internal node the points<a name="line.305"></a>
+<FONT color="green">306</FONT>         * belongs to the node cut sub-hyperplane.&lt;/p&gt;<a name="line.306"></a>
+<FONT color="green">307</FONT>         * @param point point to check<a name="line.307"></a>
+<FONT color="green">308</FONT>         * @return the tree cell to which the point belongs (can be<a name="line.308"></a>
+<FONT color="green">309</FONT>         */<a name="line.309"></a>
+<FONT color="green">310</FONT>        public BSPTree&lt;S&gt; getCell(final Vector&lt;S&gt; point) {<a name="line.310"></a>
+<FONT color="green">311</FONT>    <a name="line.311"></a>
+<FONT color="green">312</FONT>            if (cut == null) {<a name="line.312"></a>
+<FONT color="green">313</FONT>                return this;<a name="line.313"></a>
+<FONT color="green">314</FONT>            }<a name="line.314"></a>
+<FONT color="green">315</FONT>    <a name="line.315"></a>
+<FONT color="green">316</FONT>            // position of the point with respect to the cut hyperplane<a name="line.316"></a>
+<FONT color="green">317</FONT>            final double offset = cut.getHyperplane().getOffset(point);<a name="line.317"></a>
+<FONT color="green">318</FONT>    <a name="line.318"></a>
+<FONT color="green">319</FONT>            if (FastMath.abs(offset) &lt; 1.0e-10) {<a name="line.319"></a>
+<FONT color="green">320</FONT>                return this;<a name="line.320"></a>
+<FONT color="green">321</FONT>            } else if (offset &lt;= 0) {<a name="line.321"></a>
+<FONT color="green">322</FONT>                // point is on the minus side of the cut hyperplane<a name="line.322"></a>
+<FONT color="green">323</FONT>                return minus.getCell(point);<a name="line.323"></a>
+<FONT color="green">324</FONT>            } else {<a name="line.324"></a>
+<FONT color="green">325</FONT>                // point is on the plus side of the cut hyperplane<a name="line.325"></a>
+<FONT color="green">326</FONT>                return plus.getCell(point);<a name="line.326"></a>
+<FONT color="green">327</FONT>            }<a name="line.327"></a>
+<FONT color="green">328</FONT>    <a name="line.328"></a>
+<FONT color="green">329</FONT>        }<a name="line.329"></a>
+<FONT color="green">330</FONT>    <a name="line.330"></a>
+<FONT color="green">331</FONT>        /** Perform condensation on a tree.<a name="line.331"></a>
+<FONT color="green">332</FONT>         * &lt;p&gt;The condensation operation is not recursive, it must be called<a name="line.332"></a>
+<FONT color="green">333</FONT>         * explicitely from leaves to root.&lt;/p&gt;<a name="line.333"></a>
+<FONT color="green">334</FONT>         */<a name="line.334"></a>
+<FONT color="green">335</FONT>        private void condense() {<a name="line.335"></a>
+<FONT color="green">336</FONT>            if ((cut != null) &amp;&amp; (plus.cut == null) &amp;&amp; (minus.cut == null) &amp;&amp;<a name="line.336"></a>
+<FONT color="green">337</FONT>                (((plus.attribute == null) &amp;&amp; (minus.attribute == null)) ||<a name="line.337"></a>
+<FONT color="green">338</FONT>                 ((plus.attribute != null) &amp;&amp; plus.attribute.equals(minus.attribute)))) {<a name="line.338"></a>
+<FONT color="green">339</FONT>                attribute = (plus.attribute == null) ? minus.attribute : plus.attribute;<a name="line.339"></a>
+<FONT color="green">340</FONT>                cut       = null;<a name="line.340"></a>
+<FONT color="green">341</FONT>                plus      = null;<a name="line.341"></a>
+<FONT color="green">342</FONT>                minus     = null;<a name="line.342"></a>
+<FONT color="green">343</FONT>            }<a name="line.343"></a>
+<FONT color="green">344</FONT>        }<a name="line.344"></a>
+<FONT color="green">345</FONT>    <a name="line.345"></a>
+<FONT color="green">346</FONT>        /** Merge a BSP tree with the instance.<a name="line.346"></a>
+<FONT color="green">347</FONT>         * &lt;p&gt;All trees are modified (parts of them are reused in the new<a name="line.347"></a>
+<FONT color="green">348</FONT>         * tree), it is the responsibility of the caller to ensure a copy<a name="line.348"></a>
+<FONT color="green">349</FONT>         * has been done before if any of the former tree should be<a name="line.349"></a>
+<FONT color="green">350</FONT>         * preserved, &lt;em&gt;no&lt;/em&gt; such copy is done here!&lt;/p&gt;<a name="line.350"></a>
+<FONT color="green">351</FONT>         * &lt;p&gt;The algorithm used here is directly derived from the one<a name="line.351"></a>
+<FONT color="green">352</FONT>         * described in the Naylor, Amanatides and Thibault paper (section<a name="line.352"></a>
+<FONT color="green">353</FONT>         * III, Binary Partitioning of a BSP Tree).&lt;/p&gt;<a name="line.353"></a>
+<FONT color="green">354</FONT>         * @param tree other tree to merge with the instance (will be<a name="line.354"></a>
+<FONT color="green">355</FONT>         * &lt;em&gt;unusable&lt;/em&gt; after the operation, as well as the<a name="line.355"></a>
+<FONT color="green">356</FONT>         * instance itself)<a name="line.356"></a>
+<FONT color="green">357</FONT>         * @param leafMerger object implementing the final merging phase<a name="line.357"></a>
+<FONT color="green">358</FONT>         * (this is where the semantic of the operation occurs, generally<a name="line.358"></a>
+<FONT color="green">359</FONT>         * depending on the attribute of the leaf node)<a name="line.359"></a>
+<FONT color="green">360</FONT>         * @return a new tree, result of &lt;code&gt;instance &amp;lt;op&amp;gt;<a name="line.360"></a>
+<FONT color="green">361</FONT>         * tree&lt;/code&gt;, this value can be ignored if parentTree is not null<a name="line.361"></a>
+<FONT color="green">362</FONT>         * since all connections have already been established<a name="line.362"></a>
+<FONT color="green">363</FONT>         */<a name="line.363"></a>
+<FONT color="green">364</FONT>        public BSPTree&lt;S&gt; merge(final BSPTree&lt;S&gt; tree, final LeafMerger&lt;S&gt; leafMerger) {<a name="line.364"></a>
+<FONT color="green">365</FONT>            return merge(tree, leafMerger, null, false);<a name="line.365"></a>
+<FONT color="green">366</FONT>        }<a name="line.366"></a>
+<FONT color="green">367</FONT>    <a name="line.367"></a>
+<FONT color="green">368</FONT>        /** Merge a BSP tree with the instance.<a name="line.368"></a>
+<FONT color="green">369</FONT>         * @param tree other tree to merge with the instance (will be<a name="line.369"></a>
+<FONT color="green">370</FONT>         * &lt;em&gt;unusable&lt;/em&gt; after the operation, as well as the<a name="line.370"></a>
+<FONT color="green">371</FONT>         * instance itself)<a name="line.371"></a>
+<FONT color="green">372</FONT>         * @param leafMerger object implementing the final merging phase<a name="line.372"></a>
+<FONT color="green">373</FONT>         * (this is where the semantic of the operation occurs, generally<a name="line.373"></a>
+<FONT color="green">374</FONT>         * depending on the attribute of the leaf node)<a name="line.374"></a>
+<FONT color="green">375</FONT>         * @param parentTree parent tree to connect to (may be null)<a name="line.375"></a>
+<FONT color="green">376</FONT>         * @param isPlusChild if true and if parentTree is not null, the<a name="line.376"></a>
+<FONT color="green">377</FONT>         * resulting tree should be the plus child of its parent, ignored if<a name="line.377"></a>
+<FONT color="green">378</FONT>         * parentTree is null<a name="line.378"></a>
+<FONT color="green">379</FONT>         * @return a new tree, result of &lt;code&gt;instance &amp;lt;op&amp;gt;<a name="line.379"></a>
+<FONT color="green">380</FONT>         * tree&lt;/code&gt;, this value can be ignored if parentTree is not null<a name="line.380"></a>
+<FONT color="green">381</FONT>         * since all connections have already been established<a name="line.381"></a>
+<FONT color="green">382</FONT>         */<a name="line.382"></a>
+<FONT color="green">383</FONT>        private BSPTree&lt;S&gt; merge(final BSPTree&lt;S&gt; tree, final LeafMerger&lt;S&gt; leafMerger,<a name="line.383"></a>
+<FONT color="green">384</FONT>                                 final BSPTree&lt;S&gt; parentTree, final boolean isPlusChild) {<a name="line.384"></a>
+<FONT color="green">385</FONT>            if (cut == null) {<a name="line.385"></a>
+<FONT color="green">386</FONT>                // cell/tree operation<a name="line.386"></a>
+<FONT color="green">387</FONT>                return leafMerger.merge(this, tree, parentTree, isPlusChild, true);<a name="line.387"></a>
+<FONT color="green">388</FONT>            } else if (tree.cut == null) {<a name="line.388"></a>
+<FONT color="green">389</FONT>                // tree/cell operation<a name="line.389"></a>
+<FONT color="green">390</FONT>                return leafMerger.merge(tree, this, parentTree, isPlusChild, false);<a name="line.390"></a>
+<FONT color="green">391</FONT>            } else {<a name="line.391"></a>
+<FONT color="green">392</FONT>                // tree/tree operation<a name="line.392"></a>
+<FONT color="green">393</FONT>                final BSPTree&lt;S&gt; merged = tree.split(cut);<a name="line.393"></a>
+<FONT color="green">394</FONT>                if (parentTree != null) {<a name="line.394"></a>
+<FONT color="green">395</FONT>                    merged.parent = parentTree;<a name="line.395"></a>
+<FONT color="green">396</FONT>                    if (isPlusChild) {<a name="line.396"></a>
+<FONT color="green">397</FONT>                        parentTree.plus = merged;<a name="line.397"></a>
+<FONT color="green">398</FONT>                    } else {<a name="line.398"></a>
+<FONT color="green">399</FONT>                        parentTree.minus = merged;<a name="line.399"></a>
+<FONT color="green">400</FONT>                    }<a name="line.400"></a>
+<FONT color="green">401</FONT>                }<a name="line.401"></a>
+<FONT color="green">402</FONT>    <a name="line.402"></a>
+<FONT color="green">403</FONT>                // merging phase<a name="line.403"></a>
+<FONT color="green">404</FONT>                plus.merge(merged.plus, leafMerger, merged, true);<a name="line.404"></a>
+<FONT color="green">405</FONT>                minus.merge(merged.minus, leafMerger, merged, false);<a name="line.405"></a>
+<FONT color="green">406</FONT>                merged.condense();<a name="line.406"></a>
+<FONT color="green">407</FONT>                if (merged.cut != null) {<a name="line.407"></a>
+<FONT color="green">408</FONT>                    merged.cut =<a name="line.408"></a>
+<FONT color="green">409</FONT>                        merged.fitToCell(merged.cut.getHyperplane().wholeHyperplane());<a name="line.409"></a>
+<FONT color="green">410</FONT>                }<a name="line.410"></a>
+<FONT color="green">411</FONT>    <a name="line.411"></a>
+<FONT color="green">412</FONT>                return merged;<a name="line.412"></a>
+<FONT color="green">413</FONT>    <a name="line.413"></a>
+<FONT color="green">414</FONT>            }<a name="line.414"></a>
+<FONT color="green">415</FONT>        }<a name="line.415"></a>
+<FONT color="green">416</FONT>    <a name="line.416"></a>
+<FONT color="green">417</FONT>        /** This interface gather the merging operations between a BSP tree<a name="line.417"></a>
+<FONT color="green">418</FONT>         * leaf and another BSP tree.<a name="line.418"></a>
+<FONT color="green">419</FONT>         * &lt;p&gt;As explained in Bruce Naylor, John Amanatides and William<a name="line.419"></a>
+<FONT color="green">420</FONT>         * Thibault paper &lt;a<a name="line.420"></a>
+<FONT color="green">421</FONT>         * href="http://www.cs.yorku.ca/~amana/research/bsptSetOp.pdf"&gt;Merging<a name="line.421"></a>
+<FONT color="green">422</FONT>         * BSP Trees Yields Polyhedral Set Operations&lt;/a&gt;,<a name="line.422"></a>
+<FONT color="green">423</FONT>         * the operations on {@link BSPTree BSP trees} can be expressed as a<a name="line.423"></a>
+<FONT color="green">424</FONT>         * generic recursive merging operation where only the final part,<a name="line.424"></a>
+<FONT color="green">425</FONT>         * when one of the operand is a leaf, is specific to the real<a name="line.425"></a>
+<FONT color="green">426</FONT>         * operation semantics. For example, a tree representing a region<a name="line.426"></a>
+<FONT color="green">427</FONT>         * using a boolean attribute to identify inside cells and outside<a name="line.427"></a>
+<FONT color="green">428</FONT>         * cells would use four different objects to implement the final<a name="line.428"></a>
+<FONT color="green">429</FONT>         * merging phase of the four set operations union, intersection,<a name="line.429"></a>
+<FONT color="green">430</FONT>         * difference and symmetric difference (exclusive or).&lt;/p&gt;<a name="line.430"></a>
+<FONT color="green">431</FONT>         * @param &lt;S&gt; Type of the space.<a name="line.431"></a>
+<FONT color="green">432</FONT>         */<a name="line.432"></a>
+<FONT color="green">433</FONT>        public interface LeafMerger&lt;S extends Space&gt; {<a name="line.433"></a>
+<FONT color="green">434</FONT>    <a name="line.434"></a>
+<FONT color="green">435</FONT>            /** Merge a leaf node and a tree node.<a name="line.435"></a>
+<FONT color="green">436</FONT>             * &lt;p&gt;This method is called at the end of a recursive merging<a name="line.436"></a>
+<FONT color="green">437</FONT>             * resulting from a {@code tree1.merge(tree2, leafMerger)}<a name="line.437"></a>
+<FONT color="green">438</FONT>             * call, when one of the sub-trees involved is a leaf (i.e. when<a name="line.438"></a>
+<FONT color="green">439</FONT>             * its cut-hyperplane is null). This is the only place where the<a name="line.439"></a>
+<FONT color="green">440</FONT>             * precise semantics of the operation are required. For all upper<a name="line.440"></a>
+<FONT color="green">441</FONT>             * level nodes in the tree, the merging operation is only a<a name="line.441"></a>
+<FONT color="green">442</FONT>             * generic partitioning algorithm.&lt;/p&gt;<a name="line.442"></a>
+<FONT color="green">443</FONT>             * &lt;p&gt;Since the final operation may be non-commutative, it is<a name="line.443"></a>
+<FONT color="green">444</FONT>             * important to know if the leaf node comes from the instance tree<a name="line.444"></a>
+<FONT color="green">445</FONT>             * ({@code tree1}) or the argument tree<a name="line.445"></a>
+<FONT color="green">446</FONT>             * ({@code tree2}). The third argument of the method is<a name="line.446"></a>
+<FONT color="green">447</FONT>             * devoted to this. It can be ignored for commutative<a name="line.447"></a>
+<FONT color="green">448</FONT>             * operations.&lt;/p&gt;<a name="line.448"></a>
+<FONT color="green">449</FONT>             * &lt;p&gt;The {@link BSPTree#insertInTree BSPTree.insertInTree} method<a name="line.449"></a>
+<FONT color="green">450</FONT>             * may be useful to implement this method.&lt;/p&gt;<a name="line.450"></a>
+<FONT color="green">451</FONT>             * @param leaf leaf node (its cut hyperplane is guaranteed to be<a name="line.451"></a>
+<FONT color="green">452</FONT>             * null)<a name="line.452"></a>
+<FONT color="green">453</FONT>             * @param tree tree node (its cut hyperplane may be null or not)<a name="line.453"></a>
+<FONT color="green">454</FONT>             * @param parentTree parent tree to connect to (may be null)<a name="line.454"></a>
+<FONT color="green">455</FONT>             * @param isPlusChild if true and if parentTree is not null, the<a name="line.455"></a>
+<FONT color="green">456</FONT>             * resulting tree should be the plus child of its parent, ignored if<a name="line.456"></a>
+<FONT color="green">457</FONT>             * parentTree is null<a name="line.457"></a>
+<FONT color="green">458</FONT>             * @param leafFromInstance if true, the leaf node comes from the<a name="line.458"></a>
+<FONT color="green">459</FONT>             * instance tree ({@code tree1}) and the tree node comes from<a name="line.459"></a>
+<FONT color="green">460</FONT>             * the argument tree ({@code tree2})<a name="line.460"></a>
+<FONT color="green">461</FONT>             * @return the BSP tree resulting from the merging (may be one of<a name="line.461"></a>
+<FONT color="green">462</FONT>             * the arguments)<a name="line.462"></a>
+<FONT color="green">463</FONT>             */<a name="line.463"></a>
+<FONT color="green">464</FONT>            BSPTree&lt;S&gt; merge(BSPTree&lt;S&gt; leaf, BSPTree&lt;S&gt; tree, BSPTree&lt;S&gt; parentTree,<a name="line.464"></a>
+<FONT color="green">465</FONT>                             boolean isPlusChild, boolean leafFromInstance);<a name="line.465"></a>
+<FONT color="green">466</FONT>    <a name="line.466"></a>
+<FONT color="green">467</FONT>        }<a name="line.467"></a>
+<FONT color="green">468</FONT>    <a name="line.468"></a>
+<FONT color="green">469</FONT>        /** Split a BSP tree by an external sub-hyperplane.<a name="line.469"></a>
+<FONT color="green">470</FONT>         * &lt;p&gt;Split a tree in two halves, on each side of the<a name="line.470"></a>
+<FONT color="green">471</FONT>         * sub-hyperplane. The instance is not modified.&lt;/p&gt;<a name="line.471"></a>
+<FONT color="green">472</FONT>         * &lt;p&gt;The tree returned is not upward-consistent: despite all of its<a name="line.472"></a>
+<FONT color="green">473</FONT>         * sub-trees cut sub-hyperplanes (including its own cut<a name="line.473"></a>
+<FONT color="green">474</FONT>         * sub-hyperplane) are bounded to the current cell, it is &lt;em&gt;not&lt;/em&gt;<a name="line.474"></a>
+<FONT color="green">475</FONT>         * attached to any parent tree yet. This tree is intended to be<a name="line.475"></a>
+<FONT color="green">476</FONT>         * later inserted into an higher level tree.&lt;/p&gt;<a name="line.476"></a>
+<FONT color="green">477</FONT>         * &lt;p&gt;The algorithm used here is the one given in Naylor, Amanatides<a name="line.477"></a>
+<FONT color="green">478</FONT>         * and Thibault paper (section III, Binary Partitioning of a BSP<a name="line.478"></a>
+<FONT color="green">479</FONT>         * Tree).&lt;/p&gt;<a name="line.479"></a>
+<FONT color="green">480</FONT>         * @param sub partitioning sub-hyperplane, must be already clipped<a name="line.480"></a>
+<FONT color="green">481</FONT>         * to the convex region represented by the instance, will be used as<a name="line.481"></a>
+<FONT color="green">482</FONT>         * the cut sub-hyperplane of the returned tree<a name="line.482"></a>
+<FONT color="green">483</FONT>         * @return a tree having the specified sub-hyperplane as its cut<a name="line.483"></a>
+<FONT color="green">484</FONT>         * sub-hyperplane, the two parts of the split instance as its two<a name="line.484"></a>
+<FONT color="green">485</FONT>         * sub-trees and a null parent<a name="line.485"></a>
+<FONT color="green">486</FONT>         */<a name="line.486"></a>
+<FONT color="green">487</FONT>        public BSPTree&lt;S&gt; split(final SubHyperplane&lt;S&gt; sub) {<a name="line.487"></a>
+<FONT color="green">488</FONT>    <a name="line.488"></a>
+<FONT color="green">489</FONT>            if (cut == null) {<a name="line.489"></a>
+<FONT color="green">490</FONT>                return new BSPTree&lt;S&gt;(sub, copySelf(),<a name="line.490"></a>
+<FONT color="green">491</FONT>                        new BSPTree&lt;S&gt;(attribute), null);<a name="line.491"></a>
+<FONT color="green">492</FONT>            }<a name="line.492"></a>
+<FONT color="green">493</FONT>    <a name="line.493"></a>
+<FONT color="green">494</FONT>            final Hyperplane&lt;S&gt; cHyperplane = cut.getHyperplane();<a name="line.494"></a>
+<FONT color="green">495</FONT>            final Hyperplane&lt;S&gt; sHyperplane = sub.getHyperplane();<a name="line.495"></a>
+<FONT color="green">496</FONT>            switch (sub.side(cHyperplane)) {<a name="line.496"></a>
+<FONT color="green">497</FONT>            case PLUS :<a name="line.497"></a>
+<FONT color="green">498</FONT>            { // the partitioning sub-hyperplane is entirely in the plus sub-tree<a name="line.498"></a>
+<FONT color="green">499</FONT>                final BSPTree&lt;S&gt; split = plus.split(sub);<a name="line.499"></a>
+<FONT color="green">500</FONT>                if (cut.side(sHyperplane) == Side.PLUS) {<a name="line.500"></a>
+<FONT color="green">501</FONT>                    split.plus =<a name="line.501"></a>
+<FONT color="green">502</FONT>                        new BSPTree&lt;S&gt;(cut.copySelf(), split.plus, minus.copySelf(), attribute);<a name="line.502"></a>
+<FONT color="green">503</FONT>                    split.plus.condense();<a name="line.503"></a>
+<FONT color="green">504</FONT>                    split.plus.parent = split;<a name="line.504"></a>
+<FONT color="green">505</FONT>                } else {<a name="line.505"></a>
+<FONT color="green">506</FONT>                    split.minus =<a name="line.506"></a>
+<FONT color="green">507</FONT>                        new BSPTree&lt;S&gt;(cut.copySelf(), split.minus, minus.copySelf(), attribute);<a name="line.507"></a>
+<FONT color="green">508</FONT>                    split.minus.condense();<a name="line.508"></a>
+<FONT color="green">509</FONT>                    split.minus.parent = split;<a name="line.509"></a>
+<FONT color="green">510</FONT>                }<a name="line.510"></a>
+<FONT color="green">511</FONT>                return split;<a name="line.511"></a>
+<FONT color="green">512</FONT>            }<a name="line.512"></a>
+<FONT color="green">513</FONT>            case MINUS :<a name="line.513"></a>
+<FONT color="green">514</FONT>            { // the partitioning sub-hyperplane is entirely in the minus sub-tree<a name="line.514"></a>
+<FONT color="green">515</FONT>                final BSPTree&lt;S&gt; split = minus.split(sub);<a name="line.515"></a>
+<FONT color="green">516</FONT>                if (cut.side(sHyperplane) == Side.PLUS) {<a name="line.516"></a>
+<FONT color="green">517</FONT>                    split.plus =<a name="line.517"></a>
+<FONT color="green">518</FONT>                        new BSPTree&lt;S&gt;(cut.copySelf(), plus.copySelf(), split.plus, attribute);<a name="line.518"></a>
+<FONT color="green">519</FONT>                    split.plus.condense();<a name="line.519"></a>
+<FONT color="green">520</FONT>                    split.plus.parent = split;<a name="line.520"></a>
+<FONT color="green">521</FONT>                } else {<a name="line.521"></a>
+<FONT color="green">522</FONT>                    split.minus =<a name="line.522"></a>
+<FONT color="green">523</FONT>                        new BSPTree&lt;S&gt;(cut.copySelf(), plus.copySelf(), split.minus, attribute);<a name="line.523"></a>
+<FONT color="green">524</FONT>                    split.minus.condense();<a name="line.524"></a>
+<FONT color="green">525</FONT>                    split.minus.parent = split;<a name="line.525"></a>
+<FONT color="green">526</FONT>                }<a name="line.526"></a>
+<FONT color="green">527</FONT>                return split;<a name="line.527"></a>
+<FONT color="green">528</FONT>            }<a name="line.528"></a>
+<FONT color="green">529</FONT>            case BOTH :<a name="line.529"></a>
+<FONT color="green">530</FONT>            {<a name="line.530"></a>
+<FONT color="green">531</FONT>                final SubHyperplane.SplitSubHyperplane&lt;S&gt; cutParts = cut.split(sHyperplane);<a name="line.531"></a>
+<FONT color="green">532</FONT>                final SubHyperplane.SplitSubHyperplane&lt;S&gt; subParts = sub.split(cHyperplane);<a name="line.532"></a>
+<FONT color="green">533</FONT>                final BSPTree&lt;S&gt; split =<a name="line.533"></a>
+<FONT color="green">534</FONT>                    new BSPTree&lt;S&gt;(sub, plus.split(subParts.getPlus()), minus.split(subParts.getMinus()),<a name="line.534"></a>
+<FONT color="green">535</FONT>                                   null);<a name="line.535"></a>
+<FONT color="green">536</FONT>                split.plus.cut          = cutParts.getPlus();<a name="line.536"></a>
+<FONT color="green">537</FONT>                split.minus.cut         = cutParts.getMinus();<a name="line.537"></a>
+<FONT color="green">538</FONT>                final BSPTree&lt;S&gt; tmp    = split.plus.minus;<a name="line.538"></a>
+<FONT color="green">539</FONT>                split.plus.minus        = split.minus.plus;<a name="line.539"></a>
+<FONT color="green">540</FONT>                split.plus.minus.parent = split.plus;<a name="line.540"></a>
+<FONT color="green">541</FONT>                split.minus.plus        = tmp;<a name="line.541"></a>
+<FONT color="green">542</FONT>                split.minus.plus.parent = split.minus;<a name="line.542"></a>
+<FONT color="green">543</FONT>                split.plus.condense();<a name="line.543"></a>
+<FONT color="green">544</FONT>                split.minus.condense();<a name="line.544"></a>
+<FONT color="green">545</FONT>                return split;<a name="line.545"></a>
+<FONT color="green">546</FONT>            }<a name="line.546"></a>
+<FONT color="green">547</FONT>            default :<a name="line.547"></a>
+<FONT color="green">548</FONT>                return cHyperplane.sameOrientationAs(sHyperplane) ?<a name="line.548"></a>
+<FONT color="green">549</FONT>                       new BSPTree&lt;S&gt;(sub, plus.copySelf(),  minus.copySelf(), attribute) :<a name="line.549"></a>
+<FONT color="green">550</FONT>                       new BSPTree&lt;S&gt;(sub, minus.copySelf(), plus.copySelf(),  attribute);<a name="line.550"></a>
+<FONT color="green">551</FONT>            }<a name="line.551"></a>
+<FONT color="green">552</FONT>    <a name="line.552"></a>
+<FONT color="green">553</FONT>        }<a name="line.553"></a>
+<FONT color="green">554</FONT>    <a name="line.554"></a>
+<FONT color="green">555</FONT>        /** Insert the instance into another tree.<a name="line.555"></a>
+<FONT color="green">556</FONT>         * &lt;p&gt;The instance itself is modified so its former parent should<a name="line.556"></a>
+<FONT color="green">557</FONT>         * not be used anymore.&lt;/p&gt;<a name="line.557"></a>
+<FONT color="green">558</FONT>         * @param parentTree parent tree to connect to (may be null)<a name="line.558"></a>
+<FONT color="green">559</FONT>         * @param isPlusChild if true and if parentTree is not null, the<a name="line.559"></a>
+<FONT color="green">560</FONT>         * resulting tree should be the plus child of its parent, ignored if<a name="line.560"></a>
+<FONT color="green">561</FONT>         * parentTree is null<a name="line.561"></a>
+<FONT color="green">562</FONT>         * @see LeafMerger<a name="line.562"></a>
+<FONT color="green">563</FONT>         */<a name="line.563"></a>
+<FONT color="green">564</FONT>        public void insertInTree(final BSPTree&lt;S&gt; parentTree, final boolean isPlusChild) {<a name="line.564"></a>
+<FONT color="green">565</FONT>    <a name="line.565"></a>
+<FONT color="green">566</FONT>            // set up parent/child links<a name="line.566"></a>
+<FONT color="green">567</FONT>            parent = parentTree;<a name="line.567"></a>
+<FONT color="green">568</FONT>            if (parentTree != null) {<a name="line.568"></a>
+<FONT color="green">569</FONT>                if (isPlusChild) {<a name="line.569"></a>
+<FONT color="green">570</FONT>                    parentTree.plus = this;<a name="line.570"></a>
+<FONT color="green">571</FONT>                } else {<a name="line.571"></a>
+<FONT color="green">572</FONT>                    parentTree.minus = this;<a name="line.572"></a>
+<FONT color="green">573</FONT>                }<a name="line.573"></a>
+<FONT color="green">574</FONT>            }<a name="line.574"></a>
+<FONT color="green">575</FONT>    <a name="line.575"></a>
+<FONT color="green">576</FONT>            // make sure the inserted tree lies in the cell defined by its parent nodes<a name="line.576"></a>
+<FONT color="green">577</FONT>            if (cut != null) {<a name="line.577"></a>
+<FONT color="green">578</FONT>    <a name="line.578"></a>
+<FONT color="green">579</FONT>                // explore the parent nodes from here towards tree root<a name="line.579"></a>
+<FONT color="green">580</FONT>                for (BSPTree&lt;S&gt; tree = this; tree.parent != null; tree = tree.parent) {<a name="line.580"></a>
+<FONT color="green">581</FONT>    <a name="line.581"></a>
+<FONT color="green">582</FONT>                    // this is an hyperplane of some parent node<a name="line.582"></a>
+<FONT color="green">583</FONT>                    final Hyperplane&lt;S&gt; hyperplane = tree.parent.cut.getHyperplane();<a name="line.583"></a>
+<FONT color="green">584</FONT>    <a name="line.584"></a>
+<FONT color="green">585</FONT>                    // chop off the parts of the inserted tree that extend<a name="line.585"></a>
+<FONT color="green">586</FONT>                    // on the wrong side of this parent hyperplane<a name="line.586"></a>
+<FONT color="green">587</FONT>                    if (tree == tree.parent.plus) {<a name="line.587"></a>
+<FONT color="green">588</FONT>                        cut = cut.split(hyperplane).getPlus();<a name="line.588"></a>
+<FONT color="green">589</FONT>                        plus.chopOffMinus(hyperplane);<a name="line.589"></a>
+<FONT color="green">590</FONT>                        minus.chopOffMinus(hyperplane);<a name="line.590"></a>
+<FONT color="green">591</FONT>                    } else {<a name="line.591"></a>
+<FONT color="green">592</FONT>                        cut = cut.split(hyperplane).getMinus();<a name="line.592"></a>
+<FONT color="green">593</FONT>                        plus.chopOffPlus(hyperplane);<a name="line.593"></a>
+<FONT color="green">594</FONT>                        minus.chopOffPlus(hyperplane);<a name="line.594"></a>
+<FONT color="green">595</FONT>                    }<a name="line.595"></a>
+<FONT color="green">596</FONT>    <a name="line.596"></a>
+<FONT color="green">597</FONT>                }<a name="line.597"></a>
+<FONT color="green">598</FONT>    <a name="line.598"></a>
+<FONT color="green">599</FONT>                // since we may have drop some parts of the inserted tree,<a name="line.599"></a>
+<FONT color="green">600</FONT>                // perform a condensation pass to keep the tree structure simple<a name="line.600"></a>
+<FONT color="green">601</FONT>                condense();<a name="line.601"></a>
+<FONT color="green">602</FONT>    <a name="line.602"></a>
+<FONT color="green">603</FONT>            }<a name="line.603"></a>
+<FONT color="green">604</FONT>    <a name="line.604"></a>
+<FONT color="green">605</FONT>        }<a name="line.605"></a>
+<FONT color="green">606</FONT>    <a name="line.606"></a>
+<FONT color="green">607</FONT>        /** Chop off parts of the tree.<a name="line.607"></a>
+<FONT color="green">608</FONT>         * &lt;p&gt;The instance is modified in place, all the parts that are on<a name="line.608"></a>
+<FONT color="green">609</FONT>         * the minus side of the chopping hyperplane are discarded, only the<a name="line.609"></a>
+<FONT color="green">610</FONT>         * parts on the plus side remain.&lt;/p&gt;<a name="line.610"></a>
+<FONT color="green">611</FONT>         * @param hyperplane chopping hyperplane<a name="line.611"></a>
+<FONT color="green">612</FONT>         */<a name="line.612"></a>
+<FONT color="green">613</FONT>        private void chopOffMinus(final Hyperplane&lt;S&gt; hyperplane) {<a name="line.613"></a>
+<FONT color="green">614</FONT>            if (cut != null) {<a name="line.614"></a>
+<FONT color="green">615</FONT>                cut = cut.split(hyperplane).getPlus();<a name="line.615"></a>
+<FONT color="green">616</FONT>                plus.chopOffMinus(hyperplane);<a name="line.616"></a>
+<FONT color="green">617</FONT>                minus.chopOffMinus(hyperplane);<a name="line.617"></a>
+<FONT color="green">618</FONT>            }<a name="line.618"></a>
+<FONT color="green">619</FONT>        }<a name="line.619"></a>
+<FONT color="green">620</FONT>    <a name="line.620"></a>
+<FONT color="green">621</FONT>        /** Chop off parts of the tree.<a name="line.621"></a>
+<FONT color="green">622</FONT>         * &lt;p&gt;The instance is modified in place, all the parts that are on<a name="line.622"></a>
+<FONT color="green">623</FONT>         * the plus side of the chopping hyperplane are discarded, only the<a name="line.623"></a>
+<FONT color="green">624</FONT>         * parts on the minus side remain.&lt;/p&gt;<a name="line.624"></a>
+<FONT color="green">625</FONT>         * @param hyperplane chopping hyperplane<a name="line.625"></a>
+<FONT color="green">626</FONT>         */<a name="line.626"></a>
+<FONT color="green">627</FONT>        private void chopOffPlus(final Hyperplane&lt;S&gt; hyperplane) {<a name="line.627"></a>
+<FONT color="green">628</FONT>            if (cut != null) {<a name="line.628"></a>
+<FONT color="green">629</FONT>                cut = cut.split(hyperplane).getMinus();<a name="line.629"></a>
+<FONT color="green">630</FONT>                plus.chopOffPlus(hyperplane);<a name="line.630"></a>
+<FONT color="green">631</FONT>                minus.chopOffPlus(hyperplane);<a name="line.631"></a>
+<FONT color="green">632</FONT>            }<a name="line.632"></a>
+<FONT color="green">633</FONT>        }<a name="line.633"></a>
+<FONT color="green">634</FONT>    <a name="line.634"></a>
+<FONT color="green">635</FONT>    }<a name="line.635"></a>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</PRE>
+</BODY>
+</HTML>

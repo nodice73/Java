@@ -1,0 +1,108 @@
+<HTML>
+<BODY BGCOLOR="white">
+<PRE>
+<FONT color="green">001</FONT>    /*<a name="line.1"></a>
+<FONT color="green">002</FONT>     * Licensed to the Apache Software Foundation (ASF) under one or more<a name="line.2"></a>
+<FONT color="green">003</FONT>     * contributor license agreements.  See the NOTICE file distributed with<a name="line.3"></a>
+<FONT color="green">004</FONT>     * this work for additional information regarding copyright ownership.<a name="line.4"></a>
+<FONT color="green">005</FONT>     * The ASF licenses this file to You under the Apache License, Version 2.0<a name="line.5"></a>
+<FONT color="green">006</FONT>     * (the "License"); you may not use this file except in compliance with<a name="line.6"></a>
+<FONT color="green">007</FONT>     * the License.  You may obtain a copy of the License at<a name="line.7"></a>
+<FONT color="green">008</FONT>     *<a name="line.8"></a>
+<FONT color="green">009</FONT>     *      http://www.apache.org/licenses/LICENSE-2.0<a name="line.9"></a>
+<FONT color="green">010</FONT>     *<a name="line.10"></a>
+<FONT color="green">011</FONT>     * Unless required by applicable law or agreed to in writing, software<a name="line.11"></a>
+<FONT color="green">012</FONT>     * distributed under the License is distributed on an "AS IS" BASIS,<a name="line.12"></a>
+<FONT color="green">013</FONT>     * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.<a name="line.13"></a>
+<FONT color="green">014</FONT>     * See the License for the specific language governing permissions and<a name="line.14"></a>
+<FONT color="green">015</FONT>     * limitations under the License.<a name="line.15"></a>
+<FONT color="green">016</FONT>     */<a name="line.16"></a>
+<FONT color="green">017</FONT>    package org.apache.commons.math3.ode;<a name="line.17"></a>
+<FONT color="green">018</FONT>    <a name="line.18"></a>
+<FONT color="green">019</FONT>    import org.apache.commons.math3.exception.DimensionMismatchException;<a name="line.19"></a>
+<FONT color="green">020</FONT>    import org.apache.commons.math3.exception.MaxCountExceededException;<a name="line.20"></a>
+<FONT color="green">021</FONT>    <a name="line.21"></a>
+<FONT color="green">022</FONT>    /** Interface expanding {@link FirstOrderDifferentialEquations first order<a name="line.22"></a>
+<FONT color="green">023</FONT>     *  differential equations} in order to compute exactly the main state jacobian<a name="line.23"></a>
+<FONT color="green">024</FONT>     *  matrix for {@link JacobianMatrices partial derivatives equations}.<a name="line.24"></a>
+<FONT color="green">025</FONT>     *<a name="line.25"></a>
+<FONT color="green">026</FONT>     * @version $Id: MainStateJacobianProvider.java 1416643 2012-12-03 19:37:14Z tn $<a name="line.26"></a>
+<FONT color="green">027</FONT>     * @since 3.0<a name="line.27"></a>
+<FONT color="green">028</FONT>     */<a name="line.28"></a>
+<FONT color="green">029</FONT>    public interface MainStateJacobianProvider extends FirstOrderDifferentialEquations {<a name="line.29"></a>
+<FONT color="green">030</FONT>    <a name="line.30"></a>
+<FONT color="green">031</FONT>        /** Compute the jacobian matrix of ODE with respect to main state.<a name="line.31"></a>
+<FONT color="green">032</FONT>         * @param t current value of the independent &lt;I&gt;time&lt;/I&gt; variable<a name="line.32"></a>
+<FONT color="green">033</FONT>         * @param y array containing the current value of the main state vector<a name="line.33"></a>
+<FONT color="green">034</FONT>         * @param yDot array containing the current value of the time derivative of the main state vector<a name="line.34"></a>
+<FONT color="green">035</FONT>         * @param dFdY placeholder array where to put the jacobian matrix of the ODE w.r.t. the main state vector<a name="line.35"></a>
+<FONT color="green">036</FONT>         * @exception MaxCountExceededException if the number of functions evaluations is exceeded<a name="line.36"></a>
+<FONT color="green">037</FONT>         * @exception DimensionMismatchException if arrays dimensions do not match equations settings<a name="line.37"></a>
+<FONT color="green">038</FONT>         */<a name="line.38"></a>
+<FONT color="green">039</FONT>        void computeMainStateJacobian(double t, double[] y, double[] yDot, double[][] dFdY)<a name="line.39"></a>
+<FONT color="green">040</FONT>            throws MaxCountExceededException, DimensionMismatchException;<a name="line.40"></a>
+<FONT color="green">041</FONT>    <a name="line.41"></a>
+<FONT color="green">042</FONT>    }<a name="line.42"></a>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</PRE>
+</BODY>
+</HTML>

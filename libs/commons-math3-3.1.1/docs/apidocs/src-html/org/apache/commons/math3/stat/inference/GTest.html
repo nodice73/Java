@@ -1,0 +1,603 @@
+<HTML>
+<BODY BGCOLOR="white">
+<PRE>
+<FONT color="green">001</FONT>    /*<a name="line.1"></a>
+<FONT color="green">002</FONT>     * Licensed to the Apache Software Foundation (ASF) under one or more<a name="line.2"></a>
+<FONT color="green">003</FONT>     * contributor license agreements.  See the NOTICE file distributed with<a name="line.3"></a>
+<FONT color="green">004</FONT>     * this work for additional information regarding copyright ownership.<a name="line.4"></a>
+<FONT color="green">005</FONT>     * The ASF licenses this file to You under the Apache License, Version 2.0<a name="line.5"></a>
+<FONT color="green">006</FONT>     * (the "License"); you may not use this file except in compliance with<a name="line.6"></a>
+<FONT color="green">007</FONT>     * the License.  You may obtain a copy of the License at<a name="line.7"></a>
+<FONT color="green">008</FONT>     *<a name="line.8"></a>
+<FONT color="green">009</FONT>     *      http://www.apache.org/licenses/LICENSE-2.0<a name="line.9"></a>
+<FONT color="green">010</FONT>     *<a name="line.10"></a>
+<FONT color="green">011</FONT>     * Unless required by applicable law or agreed to in writing, software<a name="line.11"></a>
+<FONT color="green">012</FONT>     * distributed under the License is distributed on an "AS IS" BASIS,<a name="line.12"></a>
+<FONT color="green">013</FONT>     * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.<a name="line.13"></a>
+<FONT color="green">014</FONT>     * See the License for the specific language governing permissions and<a name="line.14"></a>
+<FONT color="green">015</FONT>     * limitations under the License.<a name="line.15"></a>
+<FONT color="green">016</FONT>     */<a name="line.16"></a>
+<FONT color="green">017</FONT>    package org.apache.commons.math3.stat.inference;<a name="line.17"></a>
+<FONT color="green">018</FONT>    <a name="line.18"></a>
+<FONT color="green">019</FONT>    import org.apache.commons.math3.distribution.ChiSquaredDistribution;<a name="line.19"></a>
+<FONT color="green">020</FONT>    import org.apache.commons.math3.exception.DimensionMismatchException;<a name="line.20"></a>
+<FONT color="green">021</FONT>    import org.apache.commons.math3.exception.MaxCountExceededException;<a name="line.21"></a>
+<FONT color="green">022</FONT>    import org.apache.commons.math3.exception.NotPositiveException;<a name="line.22"></a>
+<FONT color="green">023</FONT>    import org.apache.commons.math3.exception.NotStrictlyPositiveException;<a name="line.23"></a>
+<FONT color="green">024</FONT>    import org.apache.commons.math3.exception.OutOfRangeException;<a name="line.24"></a>
+<FONT color="green">025</FONT>    import org.apache.commons.math3.exception.ZeroException;<a name="line.25"></a>
+<FONT color="green">026</FONT>    import org.apache.commons.math3.exception.util.LocalizedFormats;<a name="line.26"></a>
+<FONT color="green">027</FONT>    import org.apache.commons.math3.util.FastMath;<a name="line.27"></a>
+<FONT color="green">028</FONT>    import org.apache.commons.math3.util.MathArrays;<a name="line.28"></a>
+<FONT color="green">029</FONT>    <a name="line.29"></a>
+<FONT color="green">030</FONT>    /**<a name="line.30"></a>
+<FONT color="green">031</FONT>     * Implements &lt;a href="http://en.wikipedia.org/wiki/G-test"&gt;G Test&lt;/a&gt;<a name="line.31"></a>
+<FONT color="green">032</FONT>     * statistics.<a name="line.32"></a>
+<FONT color="green">033</FONT>     *<a name="line.33"></a>
+<FONT color="green">034</FONT>     * &lt;p&gt;This is known in statistical genetics as the McDonald-Kreitman test.<a name="line.34"></a>
+<FONT color="green">035</FONT>     * The implementation handles both known and unknown distributions.&lt;/p&gt;<a name="line.35"></a>
+<FONT color="green">036</FONT>     *<a name="line.36"></a>
+<FONT color="green">037</FONT>     * &lt;p&gt;Two samples tests can be used when the distribution is unknown &lt;i&gt;a priori&lt;/i&gt;<a name="line.37"></a>
+<FONT color="green">038</FONT>     * but provided by one sample, or when the hypothesis under test is that the two<a name="line.38"></a>
+<FONT color="green">039</FONT>     * samples come from the same underlying distribution.&lt;/p&gt;<a name="line.39"></a>
+<FONT color="green">040</FONT>     *<a name="line.40"></a>
+<FONT color="green">041</FONT>     * @version $Id: GTest.java 1416643 2012-12-03 19:37:14Z tn $<a name="line.41"></a>
+<FONT color="green">042</FONT>     * @since 3.1<a name="line.42"></a>
+<FONT color="green">043</FONT>     */<a name="line.43"></a>
+<FONT color="green">044</FONT>    public class GTest {<a name="line.44"></a>
+<FONT color="green">045</FONT>    <a name="line.45"></a>
+<FONT color="green">046</FONT>        /**<a name="line.46"></a>
+<FONT color="green">047</FONT>         * Computes the &lt;a href="http://en.wikipedia.org/wiki/G-test"&gt;G statistic<a name="line.47"></a>
+<FONT color="green">048</FONT>         * for Goodness of Fit&lt;/a&gt; comparing {@code observed} and {@code expected}<a name="line.48"></a>
+<FONT color="green">049</FONT>         * frequency counts.<a name="line.49"></a>
+<FONT color="green">050</FONT>         *<a name="line.50"></a>
+<FONT color="green">051</FONT>         * &lt;p&gt;This statistic can be used to perform a G test (Log-Likelihood Ratio<a name="line.51"></a>
+<FONT color="green">052</FONT>         * Test) evaluating the null hypothesis that the observed counts follow the<a name="line.52"></a>
+<FONT color="green">053</FONT>         * expected distribution.&lt;/p&gt;<a name="line.53"></a>
+<FONT color="green">054</FONT>         *<a name="line.54"></a>
+<FONT color="green">055</FONT>         * &lt;p&gt;&lt;strong&gt;Preconditions&lt;/strong&gt;: &lt;ul&gt;<a name="line.55"></a>
+<FONT color="green">056</FONT>         * &lt;li&gt;Expected counts must all be positive. &lt;/li&gt;<a name="line.56"></a>
+<FONT color="green">057</FONT>         * &lt;li&gt;Observed counts must all be &amp;ge; 0. &lt;/li&gt;<a name="line.57"></a>
+<FONT color="green">058</FONT>         * &lt;li&gt;The observed and expected arrays must have the same length and their<a name="line.58"></a>
+<FONT color="green">059</FONT>         * common length must be at least 2. &lt;/li&gt;&lt;/ul&gt;&lt;/p&gt;<a name="line.59"></a>
+<FONT color="green">060</FONT>         *<a name="line.60"></a>
+<FONT color="green">061</FONT>         * &lt;p&gt;If any of the preconditions are not met, a<a name="line.61"></a>
+<FONT color="green">062</FONT>         * {@code MathIllegalArgumentException} is thrown.&lt;/p&gt;<a name="line.62"></a>
+<FONT color="green">063</FONT>         *<a name="line.63"></a>
+<FONT color="green">064</FONT>         * &lt;p&gt;&lt;strong&gt;Note:&lt;/strong&gt;This implementation rescales the<a name="line.64"></a>
+<FONT color="green">065</FONT>         * {@code expected} array if necessary to ensure that the sum of the<a name="line.65"></a>
+<FONT color="green">066</FONT>         * expected and observed counts are equal.&lt;/p&gt;<a name="line.66"></a>
+<FONT color="green">067</FONT>         *<a name="line.67"></a>
+<FONT color="green">068</FONT>         * @param observed array of observed frequency counts<a name="line.68"></a>
+<FONT color="green">069</FONT>         * @param expected array of expected frequency counts<a name="line.69"></a>
+<FONT color="green">070</FONT>         * @return G-Test statistic<a name="line.70"></a>
+<FONT color="green">071</FONT>         * @throws NotPositiveException if {@code observed} has negative entries<a name="line.71"></a>
+<FONT color="green">072</FONT>         * @throws NotStrictlyPositiveException if {@code expected} has entries that<a name="line.72"></a>
+<FONT color="green">073</FONT>         * are not strictly positive<a name="line.73"></a>
+<FONT color="green">074</FONT>         * @throws DimensionMismatchException if the array lengths do not match or<a name="line.74"></a>
+<FONT color="green">075</FONT>         * are less than 2.<a name="line.75"></a>
+<FONT color="green">076</FONT>         */<a name="line.76"></a>
+<FONT color="green">077</FONT>        public double g(final double[] expected, final long[] observed)<a name="line.77"></a>
+<FONT color="green">078</FONT>                throws NotPositiveException, NotStrictlyPositiveException,<a name="line.78"></a>
+<FONT color="green">079</FONT>                DimensionMismatchException {<a name="line.79"></a>
+<FONT color="green">080</FONT>    <a name="line.80"></a>
+<FONT color="green">081</FONT>            if (expected.length &lt; 2) {<a name="line.81"></a>
+<FONT color="green">082</FONT>                throw new DimensionMismatchException(expected.length, 2);<a name="line.82"></a>
+<FONT color="green">083</FONT>            }<a name="line.83"></a>
+<FONT color="green">084</FONT>            if (expected.length != observed.length) {<a name="line.84"></a>
+<FONT color="green">085</FONT>                throw new DimensionMismatchException(expected.length, observed.length);<a name="line.85"></a>
+<FONT color="green">086</FONT>            }<a name="line.86"></a>
+<FONT color="green">087</FONT>            MathArrays.checkPositive(expected);<a name="line.87"></a>
+<FONT color="green">088</FONT>            MathArrays.checkNonNegative(observed);<a name="line.88"></a>
+<FONT color="green">089</FONT>    <a name="line.89"></a>
+<FONT color="green">090</FONT>            double sumExpected = 0d;<a name="line.90"></a>
+<FONT color="green">091</FONT>            double sumObserved = 0d;<a name="line.91"></a>
+<FONT color="green">092</FONT>            for (int i = 0; i &lt; observed.length; i++) {<a name="line.92"></a>
+<FONT color="green">093</FONT>                sumExpected += expected[i];<a name="line.93"></a>
+<FONT color="green">094</FONT>                sumObserved += observed[i];<a name="line.94"></a>
+<FONT color="green">095</FONT>            }<a name="line.95"></a>
+<FONT color="green">096</FONT>            double ratio = 1d;<a name="line.96"></a>
+<FONT color="green">097</FONT>            boolean rescale = false;<a name="line.97"></a>
+<FONT color="green">098</FONT>            if (Math.abs(sumExpected - sumObserved) &gt; 10E-6) {<a name="line.98"></a>
+<FONT color="green">099</FONT>                ratio = sumObserved / sumExpected;<a name="line.99"></a>
+<FONT color="green">100</FONT>                rescale = true;<a name="line.100"></a>
+<FONT color="green">101</FONT>            }<a name="line.101"></a>
+<FONT color="green">102</FONT>            double sum = 0d;<a name="line.102"></a>
+<FONT color="green">103</FONT>            for (int i = 0; i &lt; observed.length; i++) {<a name="line.103"></a>
+<FONT color="green">104</FONT>                final double dev = rescale ?<a name="line.104"></a>
+<FONT color="green">105</FONT>                        FastMath.log((double) observed[i] / (ratio * expected[i])) :<a name="line.105"></a>
+<FONT color="green">106</FONT>                            FastMath.log((double) observed[i] / expected[i]);<a name="line.106"></a>
+<FONT color="green">107</FONT>                sum += ((double) observed[i]) * dev;<a name="line.107"></a>
+<FONT color="green">108</FONT>            }<a name="line.108"></a>
+<FONT color="green">109</FONT>            return 2d * sum;<a name="line.109"></a>
+<FONT color="green">110</FONT>        }<a name="line.110"></a>
+<FONT color="green">111</FONT>    <a name="line.111"></a>
+<FONT color="green">112</FONT>        /**<a name="line.112"></a>
+<FONT color="green">113</FONT>         * Returns the &lt;i&gt;observed significance level&lt;/i&gt;, or &lt;a href=<a name="line.113"></a>
+<FONT color="green">114</FONT>         * "http://www.cas.lancs.ac.uk/glossary_v1.1/hyptest.html#pvalue"&gt; p-value&lt;/a&gt;,<a name="line.114"></a>
+<FONT color="green">115</FONT>         * associated with a G-Test for goodness of fit&lt;/a&gt; comparing the<a name="line.115"></a>
+<FONT color="green">116</FONT>         * {@code observed} frequency counts to those in the {@code expected} array.<a name="line.116"></a>
+<FONT color="green">117</FONT>         *<a name="line.117"></a>
+<FONT color="green">118</FONT>         * &lt;p&gt;The number returned is the smallest significance level at which one<a name="line.118"></a>
+<FONT color="green">119</FONT>         * can reject the null hypothesis that the observed counts conform to the<a name="line.119"></a>
+<FONT color="green">120</FONT>         * frequency distribution described by the expected counts.&lt;/p&gt;<a name="line.120"></a>
+<FONT color="green">121</FONT>         *<a name="line.121"></a>
+<FONT color="green">122</FONT>         * &lt;p&gt;The probability returned is the tail probability beyond<a name="line.122"></a>
+<FONT color="green">123</FONT>         * {@link #g(double[], long[]) g(expected, observed)}<a name="line.123"></a>
+<FONT color="green">124</FONT>         * in the ChiSquare distribution with degrees of freedom one less than the<a name="line.124"></a>
+<FONT color="green">125</FONT>         * common length of {@code expected} and {@code observed}.&lt;/p&gt;<a name="line.125"></a>
+<FONT color="green">126</FONT>         *<a name="line.126"></a>
+<FONT color="green">127</FONT>         * &lt;p&gt; &lt;strong&gt;Preconditions&lt;/strong&gt;: &lt;ul&gt;<a name="line.127"></a>
+<FONT color="green">128</FONT>         * &lt;li&gt;Expected counts must all be positive. &lt;/li&gt;<a name="line.128"></a>
+<FONT color="green">129</FONT>         * &lt;li&gt;Observed counts must all be &amp;ge; 0. &lt;/li&gt;<a name="line.129"></a>
+<FONT color="green">130</FONT>         * &lt;li&gt;The observed and expected arrays must have the<a name="line.130"></a>
+<FONT color="green">131</FONT>         * same length and their common length must be at least 2.&lt;/li&gt;<a name="line.131"></a>
+<FONT color="green">132</FONT>         * &lt;/ul&gt;&lt;/p&gt;<a name="line.132"></a>
+<FONT color="green">133</FONT>         *<a name="line.133"></a>
+<FONT color="green">134</FONT>         * &lt;p&gt;If any of the preconditions are not met, a<a name="line.134"></a>
+<FONT color="green">135</FONT>         * {@code MathIllegalArgumentException} is thrown.&lt;/p&gt;<a name="line.135"></a>
+<FONT color="green">136</FONT>         *<a name="line.136"></a>
+<FONT color="green">137</FONT>         * &lt;p&gt;&lt;strong&gt;Note:&lt;/strong&gt;This implementation rescales the<a name="line.137"></a>
+<FONT color="green">138</FONT>         * {@code expected} array if necessary to ensure that the sum of the<a name="line.138"></a>
+<FONT color="green">139</FONT>         *  expected and observed counts are equal.&lt;/p&gt;<a name="line.139"></a>
+<FONT color="green">140</FONT>         *<a name="line.140"></a>
+<FONT color="green">141</FONT>         * @param observed array of observed frequency counts<a name="line.141"></a>
+<FONT color="green">142</FONT>         * @param expected array of expected frequency counts<a name="line.142"></a>
+<FONT color="green">143</FONT>         * @return p-value<a name="line.143"></a>
+<FONT color="green">144</FONT>         * @throws NotPositiveException if {@code observed} has negative entries<a name="line.144"></a>
+<FONT color="green">145</FONT>         * @throws NotStrictlyPositiveException if {@code expected} has entries that<a name="line.145"></a>
+<FONT color="green">146</FONT>         * are not strictly positive<a name="line.146"></a>
+<FONT color="green">147</FONT>         * @throws DimensionMismatchException if the array lengths do not match or<a name="line.147"></a>
+<FONT color="green">148</FONT>         * are less than 2.<a name="line.148"></a>
+<FONT color="green">149</FONT>         * @throws MaxCountExceededException if an error occurs computing the<a name="line.149"></a>
+<FONT color="green">150</FONT>         * p-value.<a name="line.150"></a>
+<FONT color="green">151</FONT>         */<a name="line.151"></a>
+<FONT color="green">152</FONT>        public double gTest(final double[] expected, final long[] observed)<a name="line.152"></a>
+<FONT color="green">153</FONT>                throws NotPositiveException, NotStrictlyPositiveException,<a name="line.153"></a>
+<FONT color="green">154</FONT>                DimensionMismatchException, MaxCountExceededException {<a name="line.154"></a>
+<FONT color="green">155</FONT>    <a name="line.155"></a>
+<FONT color="green">156</FONT>            final ChiSquaredDistribution distribution =<a name="line.156"></a>
+<FONT color="green">157</FONT>                    new ChiSquaredDistribution(expected.length - 1.0);<a name="line.157"></a>
+<FONT color="green">158</FONT>            return 1.0 - distribution.cumulativeProbability(<a name="line.158"></a>
+<FONT color="green">159</FONT>                    g(expected, observed));<a name="line.159"></a>
+<FONT color="green">160</FONT>        }<a name="line.160"></a>
+<FONT color="green">161</FONT>    <a name="line.161"></a>
+<FONT color="green">162</FONT>        /**<a name="line.162"></a>
+<FONT color="green">163</FONT>         * Returns the intrinsic (Hardy-Weinberg proportions) p-Value, as described<a name="line.163"></a>
+<FONT color="green">164</FONT>         * in p64-69 of McDonald, J.H. 2009. Handbook of Biological Statistics<a name="line.164"></a>
+<FONT color="green">165</FONT>         * (2nd ed.). Sparky House Publishing, Baltimore, Maryland.<a name="line.165"></a>
+<FONT color="green">166</FONT>         *<a name="line.166"></a>
+<FONT color="green">167</FONT>         * &lt;p&gt; The probability returned is the tail probability beyond<a name="line.167"></a>
+<FONT color="green">168</FONT>         * {@link #g(double[], long[]) g(expected, observed)}<a name="line.168"></a>
+<FONT color="green">169</FONT>         * in the ChiSquare distribution with degrees of freedom two less than the<a name="line.169"></a>
+<FONT color="green">170</FONT>         * common length of {@code expected} and {@code observed}.&lt;/p&gt;<a name="line.170"></a>
+<FONT color="green">171</FONT>         *<a name="line.171"></a>
+<FONT color="green">172</FONT>         * @param observed array of observed frequency counts<a name="line.172"></a>
+<FONT color="green">173</FONT>         * @param expected array of expected frequency counts<a name="line.173"></a>
+<FONT color="green">174</FONT>         * @return p-value<a name="line.174"></a>
+<FONT color="green">175</FONT>         * @throws NotPositiveException if {@code observed} has negative entries<a name="line.175"></a>
+<FONT color="green">176</FONT>         * @throws NotStrictlyPositiveException {@code expected} has entries that are<a name="line.176"></a>
+<FONT color="green">177</FONT>         * not strictly positive<a name="line.177"></a>
+<FONT color="green">178</FONT>         * @throws DimensionMismatchException if the array lengths do not match or<a name="line.178"></a>
+<FONT color="green">179</FONT>         * are less than 2.<a name="line.179"></a>
+<FONT color="green">180</FONT>         * @throws MaxCountExceededException if an error occurs computing the<a name="line.180"></a>
+<FONT color="green">181</FONT>         * p-value.<a name="line.181"></a>
+<FONT color="green">182</FONT>         */<a name="line.182"></a>
+<FONT color="green">183</FONT>        public double gTestIntrinsic(final double[] expected, final long[] observed)<a name="line.183"></a>
+<FONT color="green">184</FONT>                throws NotPositiveException, NotStrictlyPositiveException,<a name="line.184"></a>
+<FONT color="green">185</FONT>                DimensionMismatchException, MaxCountExceededException {<a name="line.185"></a>
+<FONT color="green">186</FONT>    <a name="line.186"></a>
+<FONT color="green">187</FONT>            final ChiSquaredDistribution distribution =<a name="line.187"></a>
+<FONT color="green">188</FONT>                    new ChiSquaredDistribution(expected.length - 2.0);<a name="line.188"></a>
+<FONT color="green">189</FONT>            return 1.0 - distribution.cumulativeProbability(<a name="line.189"></a>
+<FONT color="green">190</FONT>                    g(expected, observed));<a name="line.190"></a>
+<FONT color="green">191</FONT>        }<a name="line.191"></a>
+<FONT color="green">192</FONT>    <a name="line.192"></a>
+<FONT color="green">193</FONT>        /**<a name="line.193"></a>
+<FONT color="green">194</FONT>         * Performs a G-Test (Log-Likelihood Ratio Test) for goodness of fit<a name="line.194"></a>
+<FONT color="green">195</FONT>         * evaluating the null hypothesis that the observed counts conform to the<a name="line.195"></a>
+<FONT color="green">196</FONT>         * frequency distribution described by the expected counts, with<a name="line.196"></a>
+<FONT color="green">197</FONT>         * significance level {@code alpha}. Returns true iff the null<a name="line.197"></a>
+<FONT color="green">198</FONT>         * hypothesis can be rejected with {@code 100 * (1 - alpha)} percent confidence.<a name="line.198"></a>
+<FONT color="green">199</FONT>         *<a name="line.199"></a>
+<FONT color="green">200</FONT>         * &lt;p&gt;&lt;strong&gt;Example:&lt;/strong&gt;&lt;br&gt; To test the hypothesis that<a name="line.200"></a>
+<FONT color="green">201</FONT>         * {@code observed} follows {@code expected} at the 99% level,<a name="line.201"></a>
+<FONT color="green">202</FONT>         * use &lt;/p&gt;&lt;p&gt;<a name="line.202"></a>
+<FONT color="green">203</FONT>         * {@code gTest(expected, observed, 0.01)}&lt;/p&gt;<a name="line.203"></a>
+<FONT color="green">204</FONT>         *<a name="line.204"></a>
+<FONT color="green">205</FONT>         * &lt;p&gt;Returns true iff {@link #gTest(double[], long[])<a name="line.205"></a>
+<FONT color="green">206</FONT>         *  gTestGoodnessOfFitPValue(expected, observed)} &lt; alpha&lt;/p&gt;<a name="line.206"></a>
+<FONT color="green">207</FONT>         *<a name="line.207"></a>
+<FONT color="green">208</FONT>         * &lt;p&gt;&lt;strong&gt;Preconditions&lt;/strong&gt;: &lt;ul&gt;<a name="line.208"></a>
+<FONT color="green">209</FONT>         * &lt;li&gt;Expected counts must all be positive. &lt;/li&gt;<a name="line.209"></a>
+<FONT color="green">210</FONT>         * &lt;li&gt;Observed counts must all be &amp;ge; 0. &lt;/li&gt;<a name="line.210"></a>
+<FONT color="green">211</FONT>         * &lt;li&gt;The observed and expected arrays must have the same length and their<a name="line.211"></a>
+<FONT color="green">212</FONT>         * common length must be at least 2.<a name="line.212"></a>
+<FONT color="green">213</FONT>         * &lt;li&gt; {@code 0 &lt; alpha &lt; 0.5} &lt;/li&gt;&lt;/ul&gt;&lt;/p&gt;<a name="line.213"></a>
+<FONT color="green">214</FONT>         *<a name="line.214"></a>
+<FONT color="green">215</FONT>         * &lt;p&gt;If any of the preconditions are not met, a<a name="line.215"></a>
+<FONT color="green">216</FONT>         * {@code MathIllegalArgumentException} is thrown.&lt;/p&gt;<a name="line.216"></a>
+<FONT color="green">217</FONT>         *<a name="line.217"></a>
+<FONT color="green">218</FONT>         * &lt;p&gt;&lt;strong&gt;Note:&lt;/strong&gt;This implementation rescales the<a name="line.218"></a>
+<FONT color="green">219</FONT>         * {@code expected} array if necessary to ensure that the sum of the<a name="line.219"></a>
+<FONT color="green">220</FONT>         * expected and observed counts are equal.&lt;/p&gt;<a name="line.220"></a>
+<FONT color="green">221</FONT>         *<a name="line.221"></a>
+<FONT color="green">222</FONT>         * @param observed array of observed frequency counts<a name="line.222"></a>
+<FONT color="green">223</FONT>         * @param expected array of expected frequency counts<a name="line.223"></a>
+<FONT color="green">224</FONT>         * @param alpha significance level of the test<a name="line.224"></a>
+<FONT color="green">225</FONT>         * @return true iff null hypothesis can be rejected with confidence 1 -<a name="line.225"></a>
+<FONT color="green">226</FONT>         * alpha<a name="line.226"></a>
+<FONT color="green">227</FONT>         * @throws NotPositiveException if {@code observed} has negative entries<a name="line.227"></a>
+<FONT color="green">228</FONT>         * @throws NotStrictlyPositiveException if {@code expected} has entries that<a name="line.228"></a>
+<FONT color="green">229</FONT>         * are not strictly positive<a name="line.229"></a>
+<FONT color="green">230</FONT>         * @throws DimensionMismatchException if the array lengths do not match or<a name="line.230"></a>
+<FONT color="green">231</FONT>         * are less than 2.<a name="line.231"></a>
+<FONT color="green">232</FONT>         * @throws MaxCountExceededException if an error occurs computing the<a name="line.232"></a>
+<FONT color="green">233</FONT>         * p-value.<a name="line.233"></a>
+<FONT color="green">234</FONT>         * @throws OutOfRangeException if alpha is not strictly greater than zero<a name="line.234"></a>
+<FONT color="green">235</FONT>         * and less than or equal to 0.5<a name="line.235"></a>
+<FONT color="green">236</FONT>         */<a name="line.236"></a>
+<FONT color="green">237</FONT>        public boolean gTest(final double[] expected, final long[] observed,<a name="line.237"></a>
+<FONT color="green">238</FONT>                final double alpha)<a name="line.238"></a>
+<FONT color="green">239</FONT>                throws NotPositiveException, NotStrictlyPositiveException,<a name="line.239"></a>
+<FONT color="green">240</FONT>                DimensionMismatchException, OutOfRangeException, MaxCountExceededException {<a name="line.240"></a>
+<FONT color="green">241</FONT>    <a name="line.241"></a>
+<FONT color="green">242</FONT>            if ((alpha &lt;= 0) || (alpha &gt; 0.5)) {<a name="line.242"></a>
+<FONT color="green">243</FONT>                throw new OutOfRangeException(LocalizedFormats.OUT_OF_BOUND_SIGNIFICANCE_LEVEL,<a name="line.243"></a>
+<FONT color="green">244</FONT>                        alpha, 0, 0.5);<a name="line.244"></a>
+<FONT color="green">245</FONT>            }<a name="line.245"></a>
+<FONT color="green">246</FONT>            return gTest(expected, observed) &lt; alpha;<a name="line.246"></a>
+<FONT color="green">247</FONT>        }<a name="line.247"></a>
+<FONT color="green">248</FONT>    <a name="line.248"></a>
+<FONT color="green">249</FONT>        /**<a name="line.249"></a>
+<FONT color="green">250</FONT>         * Calculates the &lt;a href=<a name="line.250"></a>
+<FONT color="green">251</FONT>         * "http://en.wikipedia.org/wiki/Entropy_%28information_theory%29"&gt;Shannon<a name="line.251"></a>
+<FONT color="green">252</FONT>         * entropy&lt;/a&gt; for 2 Dimensional Matrix.  The value returned is the entropy<a name="line.252"></a>
+<FONT color="green">253</FONT>         * of the vector formed by concatenating the rows (or columns) of {@code k}<a name="line.253"></a>
+<FONT color="green">254</FONT>         * to form a vector. See {@link #entropy(long[])}.<a name="line.254"></a>
+<FONT color="green">255</FONT>         *<a name="line.255"></a>
+<FONT color="green">256</FONT>         * @param k 2 Dimensional Matrix of long values (for ex. the counts of a<a name="line.256"></a>
+<FONT color="green">257</FONT>         * trials)<a name="line.257"></a>
+<FONT color="green">258</FONT>         * @return Shannon Entropy of the given Matrix<a name="line.258"></a>
+<FONT color="green">259</FONT>         *<a name="line.259"></a>
+<FONT color="green">260</FONT>         */<a name="line.260"></a>
+<FONT color="green">261</FONT>        private double entropy(final long[][] k) {<a name="line.261"></a>
+<FONT color="green">262</FONT>            double h = 0d;<a name="line.262"></a>
+<FONT color="green">263</FONT>            double sum_k = 0d;<a name="line.263"></a>
+<FONT color="green">264</FONT>            for (int i = 0; i &lt; k.length; i++) {<a name="line.264"></a>
+<FONT color="green">265</FONT>                for (int j = 0; j &lt; k[i].length; j++) {<a name="line.265"></a>
+<FONT color="green">266</FONT>                    sum_k += (double) k[i][j];<a name="line.266"></a>
+<FONT color="green">267</FONT>                }<a name="line.267"></a>
+<FONT color="green">268</FONT>            }<a name="line.268"></a>
+<FONT color="green">269</FONT>            for (int i = 0; i &lt; k.length; i++) {<a name="line.269"></a>
+<FONT color="green">270</FONT>                for (int j = 0; j &lt; k[i].length; j++) {<a name="line.270"></a>
+<FONT color="green">271</FONT>                    if (k[i][j] != 0) {<a name="line.271"></a>
+<FONT color="green">272</FONT>                        final double p_ij = (double) k[i][j] / sum_k;<a name="line.272"></a>
+<FONT color="green">273</FONT>                        h += p_ij * Math.log(p_ij);<a name="line.273"></a>
+<FONT color="green">274</FONT>                    }<a name="line.274"></a>
+<FONT color="green">275</FONT>                }<a name="line.275"></a>
+<FONT color="green">276</FONT>            }<a name="line.276"></a>
+<FONT color="green">277</FONT>            return -h;<a name="line.277"></a>
+<FONT color="green">278</FONT>        }<a name="line.278"></a>
+<FONT color="green">279</FONT>    <a name="line.279"></a>
+<FONT color="green">280</FONT>        /**<a name="line.280"></a>
+<FONT color="green">281</FONT>         * Calculates the &lt;a href="http://en.wikipedia.org/wiki/Entropy_%28information_theory%29"&gt;<a name="line.281"></a>
+<FONT color="green">282</FONT>         * Shannon entropy&lt;/a&gt; for a vector.  The values of {@code k} are taken to be<a name="line.282"></a>
+<FONT color="green">283</FONT>         * incidence counts of the values of a random variable. What is returned is &lt;br/&gt;<a name="line.283"></a>
+<FONT color="green">284</FONT>         * &amp;sum;p&lt;sub&gt;i&lt;/sub&gt;log(p&lt;sub&gt;i&lt;/sub&gt;&lt;br/&gt;<a name="line.284"></a>
+<FONT color="green">285</FONT>         * where p&lt;sub&gt;i&lt;/sub&gt; = k[i] / (sum of elements in k)<a name="line.285"></a>
+<FONT color="green">286</FONT>         *<a name="line.286"></a>
+<FONT color="green">287</FONT>         * @param k Vector (for ex. Row Sums of a trials)<a name="line.287"></a>
+<FONT color="green">288</FONT>         * @return Shannon Entropy of the given Vector<a name="line.288"></a>
+<FONT color="green">289</FONT>         *<a name="line.289"></a>
+<FONT color="green">290</FONT>         */<a name="line.290"></a>
+<FONT color="green">291</FONT>        private double entropy(final long[] k) {<a name="line.291"></a>
+<FONT color="green">292</FONT>            double h = 0d;<a name="line.292"></a>
+<FONT color="green">293</FONT>            double sum_k = 0d;<a name="line.293"></a>
+<FONT color="green">294</FONT>            for (int i = 0; i &lt; k.length; i++) {<a name="line.294"></a>
+<FONT color="green">295</FONT>                sum_k += (double) k[i];<a name="line.295"></a>
+<FONT color="green">296</FONT>            }<a name="line.296"></a>
+<FONT color="green">297</FONT>            for (int i = 0; i &lt; k.length; i++) {<a name="line.297"></a>
+<FONT color="green">298</FONT>                if (k[i] != 0) {<a name="line.298"></a>
+<FONT color="green">299</FONT>                    final double p_i = (double) k[i] / sum_k;<a name="line.299"></a>
+<FONT color="green">300</FONT>                    h += p_i * Math.log(p_i);<a name="line.300"></a>
+<FONT color="green">301</FONT>                }<a name="line.301"></a>
+<FONT color="green">302</FONT>            }<a name="line.302"></a>
+<FONT color="green">303</FONT>            return -h;<a name="line.303"></a>
+<FONT color="green">304</FONT>        }<a name="line.304"></a>
+<FONT color="green">305</FONT>    <a name="line.305"></a>
+<FONT color="green">306</FONT>        /**<a name="line.306"></a>
+<FONT color="green">307</FONT>         * &lt;p&gt;Computes a G (Log-Likelihood Ratio) two sample test statistic for<a name="line.307"></a>
+<FONT color="green">308</FONT>         * independence comparing frequency counts in<a name="line.308"></a>
+<FONT color="green">309</FONT>         * {@code observed1} and {@code observed2}. The sums of frequency<a name="line.309"></a>
+<FONT color="green">310</FONT>         * counts in the two samples are not required to be the same. The formula<a name="line.310"></a>
+<FONT color="green">311</FONT>         * used to compute the test statistic is &lt;/p&gt;<a name="line.311"></a>
+<FONT color="green">312</FONT>         *<a name="line.312"></a>
+<FONT color="green">313</FONT>         * &lt;p&gt;{@code 2 * totalSum * [H(rowSums) + H(colSums) - H(k)]}&lt;/p&gt;<a name="line.313"></a>
+<FONT color="green">314</FONT>         *<a name="line.314"></a>
+<FONT color="green">315</FONT>         * &lt;p&gt; where {@code H} is the<a name="line.315"></a>
+<FONT color="green">316</FONT>         * &lt;a href="http://en.wikipedia.org/wiki/Entropy_%28information_theory%29"&gt;<a name="line.316"></a>
+<FONT color="green">317</FONT>         * Shannon Entropy&lt;/a&gt; of the random variable formed by viewing the elements<a name="line.317"></a>
+<FONT color="green">318</FONT>         * of the argument array as incidence counts; &lt;br/&gt;<a name="line.318"></a>
+<FONT color="green">319</FONT>         * {@code k} is a matrix with rows {@code [observed1, observed2]}; &lt;br/&gt;<a name="line.319"></a>
+<FONT color="green">320</FONT>         * {@code rowSums, colSums} are the row/col sums of {@code k}; &lt;br&gt;<a name="line.320"></a>
+<FONT color="green">321</FONT>         * and {@code totalSum} is the overall sum of all entries in {@code k}.&lt;/p&gt;<a name="line.321"></a>
+<FONT color="green">322</FONT>         *<a name="line.322"></a>
+<FONT color="green">323</FONT>         * &lt;p&gt;This statistic can be used to perform a G test evaluating the null<a name="line.323"></a>
+<FONT color="green">324</FONT>         * hypothesis that both observed counts are independent &lt;/p&gt;<a name="line.324"></a>
+<FONT color="green">325</FONT>         *<a name="line.325"></a>
+<FONT color="green">326</FONT>         * &lt;p&gt; &lt;strong&gt;Preconditions&lt;/strong&gt;: &lt;ul&gt;<a name="line.326"></a>
+<FONT color="green">327</FONT>         * &lt;li&gt;Observed counts must be non-negative. &lt;/li&gt;<a name="line.327"></a>
+<FONT color="green">328</FONT>         * &lt;li&gt;Observed counts for a specific bin must not both be zero. &lt;/li&gt;<a name="line.328"></a>
+<FONT color="green">329</FONT>         * &lt;li&gt;Observed counts for a specific sample must not all be  0. &lt;/li&gt;<a name="line.329"></a>
+<FONT color="green">330</FONT>         * &lt;li&gt;The arrays {@code observed1} and {@code observed2} must have<a name="line.330"></a>
+<FONT color="green">331</FONT>         * the same length and their common length must be at least 2. &lt;/li&gt;&lt;/ul&gt;&lt;/p&gt;<a name="line.331"></a>
+<FONT color="green">332</FONT>         *<a name="line.332"></a>
+<FONT color="green">333</FONT>         * &lt;p&gt;If any of the preconditions are not met, a<a name="line.333"></a>
+<FONT color="green">334</FONT>         * {@code MathIllegalArgumentException} is thrown.&lt;/p&gt;<a name="line.334"></a>
+<FONT color="green">335</FONT>         *<a name="line.335"></a>
+<FONT color="green">336</FONT>         * @param observed1 array of observed frequency counts of the first data set<a name="line.336"></a>
+<FONT color="green">337</FONT>         * @param observed2 array of observed frequency counts of the second data<a name="line.337"></a>
+<FONT color="green">338</FONT>         * set<a name="line.338"></a>
+<FONT color="green">339</FONT>         * @return G-Test statistic<a name="line.339"></a>
+<FONT color="green">340</FONT>         * @throws DimensionMismatchException the the lengths of the arrays do not<a name="line.340"></a>
+<FONT color="green">341</FONT>         * match or their common length is less than 2<a name="line.341"></a>
+<FONT color="green">342</FONT>         * @throws NotPositiveException if any entry in {@code observed1} or<a name="line.342"></a>
+<FONT color="green">343</FONT>         * {@code observed2} is negative<a name="line.343"></a>
+<FONT color="green">344</FONT>         * @throws ZeroException if either all counts of<a name="line.344"></a>
+<FONT color="green">345</FONT>         * {@code observed1} or {@code observed2} are zero, or if the count<a name="line.345"></a>
+<FONT color="green">346</FONT>         * at the same index is zero for both arrays.<a name="line.346"></a>
+<FONT color="green">347</FONT>         */<a name="line.347"></a>
+<FONT color="green">348</FONT>        public double gDataSetsComparison(final long[] observed1, final long[] observed2)<a name="line.348"></a>
+<FONT color="green">349</FONT>                throws DimensionMismatchException, NotPositiveException, ZeroException {<a name="line.349"></a>
+<FONT color="green">350</FONT>    <a name="line.350"></a>
+<FONT color="green">351</FONT>            // Make sure lengths are same<a name="line.351"></a>
+<FONT color="green">352</FONT>            if (observed1.length &lt; 2) {<a name="line.352"></a>
+<FONT color="green">353</FONT>                throw new DimensionMismatchException(observed1.length, 2);<a name="line.353"></a>
+<FONT color="green">354</FONT>            }<a name="line.354"></a>
+<FONT color="green">355</FONT>            if (observed1.length != observed2.length) {<a name="line.355"></a>
+<FONT color="green">356</FONT>                throw new DimensionMismatchException(observed1.length, observed2.length);<a name="line.356"></a>
+<FONT color="green">357</FONT>            }<a name="line.357"></a>
+<FONT color="green">358</FONT>    <a name="line.358"></a>
+<FONT color="green">359</FONT>            // Ensure non-negative counts<a name="line.359"></a>
+<FONT color="green">360</FONT>            MathArrays.checkNonNegative(observed1);<a name="line.360"></a>
+<FONT color="green">361</FONT>            MathArrays.checkNonNegative(observed2);<a name="line.361"></a>
+<FONT color="green">362</FONT>    <a name="line.362"></a>
+<FONT color="green">363</FONT>            // Compute and compare count sums<a name="line.363"></a>
+<FONT color="green">364</FONT>            long countSum1 = 0;<a name="line.364"></a>
+<FONT color="green">365</FONT>            long countSum2 = 0;<a name="line.365"></a>
+<FONT color="green">366</FONT>    <a name="line.366"></a>
+<FONT color="green">367</FONT>            // Compute and compare count sums<a name="line.367"></a>
+<FONT color="green">368</FONT>            final long[] collSums = new long[observed1.length];<a name="line.368"></a>
+<FONT color="green">369</FONT>            final long[][] k = new long[2][observed1.length];<a name="line.369"></a>
+<FONT color="green">370</FONT>    <a name="line.370"></a>
+<FONT color="green">371</FONT>            for (int i = 0; i &lt; observed1.length; i++) {<a name="line.371"></a>
+<FONT color="green">372</FONT>                if (observed1[i] == 0 &amp;&amp; observed2[i] == 0) {<a name="line.372"></a>
+<FONT color="green">373</FONT>                    throw new ZeroException(LocalizedFormats.OBSERVED_COUNTS_BOTTH_ZERO_FOR_ENTRY, i);<a name="line.373"></a>
+<FONT color="green">374</FONT>                } else {<a name="line.374"></a>
+<FONT color="green">375</FONT>                    countSum1 += observed1[i];<a name="line.375"></a>
+<FONT color="green">376</FONT>                    countSum2 += observed2[i];<a name="line.376"></a>
+<FONT color="green">377</FONT>                    collSums[i] = observed1[i] + observed2[i];<a name="line.377"></a>
+<FONT color="green">378</FONT>                    k[0][i] = observed1[i];<a name="line.378"></a>
+<FONT color="green">379</FONT>                    k[1][i] = observed2[i];<a name="line.379"></a>
+<FONT color="green">380</FONT>                }<a name="line.380"></a>
+<FONT color="green">381</FONT>            }<a name="line.381"></a>
+<FONT color="green">382</FONT>            // Ensure neither sample is uniformly 0<a name="line.382"></a>
+<FONT color="green">383</FONT>            if (countSum1 == 0 || countSum2 == 0) {<a name="line.383"></a>
+<FONT color="green">384</FONT>                throw new ZeroException();<a name="line.384"></a>
+<FONT color="green">385</FONT>            }<a name="line.385"></a>
+<FONT color="green">386</FONT>            final long[] rowSums = {countSum1, countSum2};<a name="line.386"></a>
+<FONT color="green">387</FONT>            final double sum = (double) countSum1 + (double) countSum2;<a name="line.387"></a>
+<FONT color="green">388</FONT>            return 2 * sum * (entropy(rowSums) + entropy(collSums) - entropy(k));<a name="line.388"></a>
+<FONT color="green">389</FONT>        }<a name="line.389"></a>
+<FONT color="green">390</FONT>    <a name="line.390"></a>
+<FONT color="green">391</FONT>        /**<a name="line.391"></a>
+<FONT color="green">392</FONT>         * Calculates the root log-likelihood ratio for 2 state Datasets. See<a name="line.392"></a>
+<FONT color="green">393</FONT>         * {@link #gDataSetsComparison(long[], long[] )}.<a name="line.393"></a>
+<FONT color="green">394</FONT>         *<a name="line.394"></a>
+<FONT color="green">395</FONT>         * &lt;p&gt;Given two events A and B, let k11 be the number of times both events<a name="line.395"></a>
+<FONT color="green">396</FONT>         * occur, k12 the incidence of B without A, k21 the count of A without B,<a name="line.396"></a>
+<FONT color="green">397</FONT>         * and k22 the number of times neither A nor B occurs.  What is returned<a name="line.397"></a>
+<FONT color="green">398</FONT>         * by this method is &lt;/p&gt;<a name="line.398"></a>
+<FONT color="green">399</FONT>         *<a name="line.399"></a>
+<FONT color="green">400</FONT>         * &lt;p&gt;{@code (sgn) sqrt(gValueDataSetsComparison({k11, k12}, {k21, k22})}&lt;/p&gt;<a name="line.400"></a>
+<FONT color="green">401</FONT>         *<a name="line.401"></a>
+<FONT color="green">402</FONT>         * &lt;p&gt;where {@code sgn} is -1 if {@code k11 / (k11 + k12) &lt; k21 / (k21 + k22))};&lt;br/&gt;<a name="line.402"></a>
+<FONT color="green">403</FONT>         * 1 otherwise.&lt;/p&gt;<a name="line.403"></a>
+<FONT color="green">404</FONT>         *<a name="line.404"></a>
+<FONT color="green">405</FONT>         * &lt;p&gt;Signed root LLR has two advantages over the basic LLR: a) it is positive<a name="line.405"></a>
+<FONT color="green">406</FONT>         * where k11 is bigger than expected, negative where it is lower b) if there is<a name="line.406"></a>
+<FONT color="green">407</FONT>         * no difference it is asymptotically normally distributed. This allows one<a name="line.407"></a>
+<FONT color="green">408</FONT>         * to talk about "number of standard deviations" which is a more common frame<a name="line.408"></a>
+<FONT color="green">409</FONT>         * of reference than the chi^2 distribution.&lt;/p&gt;<a name="line.409"></a>
+<FONT color="green">410</FONT>         *<a name="line.410"></a>
+<FONT color="green">411</FONT>         * @param k11 number of times the two events occurred together (AB)<a name="line.411"></a>
+<FONT color="green">412</FONT>         * @param k12 number of times the second event occurred WITHOUT the<a name="line.412"></a>
+<FONT color="green">413</FONT>         * first event (notA,B)<a name="line.413"></a>
+<FONT color="green">414</FONT>         * @param k21 number of times the first event occurred WITHOUT the<a name="line.414"></a>
+<FONT color="green">415</FONT>         * second event (A, notB)<a name="line.415"></a>
+<FONT color="green">416</FONT>         * @param k22 number of times something else occurred (i.e. was neither<a name="line.416"></a>
+<FONT color="green">417</FONT>         * of these events (notA, notB)<a name="line.417"></a>
+<FONT color="green">418</FONT>         * @return root log-likelihood ratio<a name="line.418"></a>
+<FONT color="green">419</FONT>         *<a name="line.419"></a>
+<FONT color="green">420</FONT>         */<a name="line.420"></a>
+<FONT color="green">421</FONT>        public double rootLogLikelihoodRatio(final long k11, long k12,<a name="line.421"></a>
+<FONT color="green">422</FONT>                final long k21, final long k22) {<a name="line.422"></a>
+<FONT color="green">423</FONT>            final double llr = gDataSetsComparison(<a name="line.423"></a>
+<FONT color="green">424</FONT>                    new long[]{k11, k12}, new long[]{k21, k22});<a name="line.424"></a>
+<FONT color="green">425</FONT>            double sqrt = FastMath.sqrt(llr);<a name="line.425"></a>
+<FONT color="green">426</FONT>            if ((double) k11 / (k11 + k12) &lt; (double) k21 / (k21 + k22)) {<a name="line.426"></a>
+<FONT color="green">427</FONT>                sqrt = -sqrt;<a name="line.427"></a>
+<FONT color="green">428</FONT>            }<a name="line.428"></a>
+<FONT color="green">429</FONT>            return sqrt;<a name="line.429"></a>
+<FONT color="green">430</FONT>        }<a name="line.430"></a>
+<FONT color="green">431</FONT>    <a name="line.431"></a>
+<FONT color="green">432</FONT>        /**<a name="line.432"></a>
+<FONT color="green">433</FONT>         * &lt;p&gt;Returns the &lt;i&gt;observed significance level&lt;/i&gt;, or &lt;a href=<a name="line.433"></a>
+<FONT color="green">434</FONT>         * "http://www.cas.lancs.ac.uk/glossary_v1.1/hyptest.html#pvalue"&gt;<a name="line.434"></a>
+<FONT color="green">435</FONT>         * p-value&lt;/a&gt;, associated with a G-Value (Log-Likelihood Ratio) for two<a name="line.435"></a>
+<FONT color="green">436</FONT>         * sample test comparing bin frequency counts in {@code observed1} and<a name="line.436"></a>
+<FONT color="green">437</FONT>         * {@code observed2}.&lt;/p&gt;<a name="line.437"></a>
+<FONT color="green">438</FONT>         *<a name="line.438"></a>
+<FONT color="green">439</FONT>         * &lt;p&gt;The number returned is the smallest significance level at which one<a name="line.439"></a>
+<FONT color="green">440</FONT>         * can reject the null hypothesis that the observed counts conform to the<a name="line.440"></a>
+<FONT color="green">441</FONT>         * same distribution. &lt;/p&gt;<a name="line.441"></a>
+<FONT color="green">442</FONT>         *<a name="line.442"></a>
+<FONT color="green">443</FONT>         * &lt;p&gt;See {@link #gTest(double[], long[])} for details<a name="line.443"></a>
+<FONT color="green">444</FONT>         * on how the p-value is computed.  The degrees of of freedom used to<a name="line.444"></a>
+<FONT color="green">445</FONT>         * perform the test is one less than the common length of the input observed<a name="line.445"></a>
+<FONT color="green">446</FONT>         * count arrays.&lt;/p&gt;<a name="line.446"></a>
+<FONT color="green">447</FONT>         *<a name="line.447"></a>
+<FONT color="green">448</FONT>         * &lt;p&gt;&lt;strong&gt;Preconditions&lt;/strong&gt;:<a name="line.448"></a>
+<FONT color="green">449</FONT>         * &lt;ul&gt; &lt;li&gt;Observed counts must be non-negative. &lt;/li&gt;<a name="line.449"></a>
+<FONT color="green">450</FONT>         * &lt;li&gt;Observed counts for a specific bin must not both be zero. &lt;/li&gt;<a name="line.450"></a>
+<FONT color="green">451</FONT>         * &lt;li&gt;Observed counts for a specific sample must not all be 0. &lt;/li&gt;<a name="line.451"></a>
+<FONT color="green">452</FONT>         * &lt;li&gt;The arrays {@code observed1} and {@code observed2} must<a name="line.452"></a>
+<FONT color="green">453</FONT>         * have the same length and their common length must be at least 2. &lt;/li&gt;<a name="line.453"></a>
+<FONT color="green">454</FONT>         * &lt;/ul&gt;&lt;p&gt;<a name="line.454"></a>
+<FONT color="green">455</FONT>         * &lt;p&gt; If any of the preconditions are not met, a<a name="line.455"></a>
+<FONT color="green">456</FONT>         * {@code MathIllegalArgumentException} is thrown.&lt;/p&gt;<a name="line.456"></a>
+<FONT color="green">457</FONT>         *<a name="line.457"></a>
+<FONT color="green">458</FONT>         * @param observed1 array of observed frequency counts of the first data set<a name="line.458"></a>
+<FONT color="green">459</FONT>         * @param observed2 array of observed frequency counts of the second data<a name="line.459"></a>
+<FONT color="green">460</FONT>         * set<a name="line.460"></a>
+<FONT color="green">461</FONT>         * @return p-value<a name="line.461"></a>
+<FONT color="green">462</FONT>         * @throws DimensionMismatchException the the length of the arrays does not<a name="line.462"></a>
+<FONT color="green">463</FONT>         * match or their common length is less than 2<a name="line.463"></a>
+<FONT color="green">464</FONT>         * @throws NotPositiveException if any of the entries in {@code observed1} or<a name="line.464"></a>
+<FONT color="green">465</FONT>         * {@code observed2} are negative<a name="line.465"></a>
+<FONT color="green">466</FONT>         * @throws ZeroException if either all counts of {@code observed1} or<a name="line.466"></a>
+<FONT color="green">467</FONT>         * {@code observed2} are zero, or if the count at some index is<a name="line.467"></a>
+<FONT color="green">468</FONT>         * zero for both arrays<a name="line.468"></a>
+<FONT color="green">469</FONT>         * @throws MaxCountExceededException if an error occurs computing the<a name="line.469"></a>
+<FONT color="green">470</FONT>         * p-value.<a name="line.470"></a>
+<FONT color="green">471</FONT>         */<a name="line.471"></a>
+<FONT color="green">472</FONT>        public double gTestDataSetsComparison(final long[] observed1,<a name="line.472"></a>
+<FONT color="green">473</FONT>                final long[] observed2)<a name="line.473"></a>
+<FONT color="green">474</FONT>                throws DimensionMismatchException, NotPositiveException, ZeroException,<a name="line.474"></a>
+<FONT color="green">475</FONT>                MaxCountExceededException {<a name="line.475"></a>
+<FONT color="green">476</FONT>            final ChiSquaredDistribution distribution = new ChiSquaredDistribution(<a name="line.476"></a>
+<FONT color="green">477</FONT>                    (double) observed1.length - 1);<a name="line.477"></a>
+<FONT color="green">478</FONT>            return 1 - distribution.cumulativeProbability(<a name="line.478"></a>
+<FONT color="green">479</FONT>                    gDataSetsComparison(observed1, observed2));<a name="line.479"></a>
+<FONT color="green">480</FONT>        }<a name="line.480"></a>
+<FONT color="green">481</FONT>    <a name="line.481"></a>
+<FONT color="green">482</FONT>        /**<a name="line.482"></a>
+<FONT color="green">483</FONT>         * &lt;p&gt;Performs a G-Test (Log-Likelihood Ratio Test) comparing two binned<a name="line.483"></a>
+<FONT color="green">484</FONT>         * data sets. The test evaluates the null hypothesis that the two lists<a name="line.484"></a>
+<FONT color="green">485</FONT>         * of observed counts conform to the same frequency distribution, with<a name="line.485"></a>
+<FONT color="green">486</FONT>         * significance level {@code alpha}. Returns true iff the null<a name="line.486"></a>
+<FONT color="green">487</FONT>         * hypothesis can be rejected  with 100 * (1 - alpha) percent confidence.<a name="line.487"></a>
+<FONT color="green">488</FONT>         * &lt;/p&gt;<a name="line.488"></a>
+<FONT color="green">489</FONT>         * &lt;p&gt;See {@link #gDataSetsComparison(long[], long[])} for details<a name="line.489"></a>
+<FONT color="green">490</FONT>         * on the formula used to compute the G (LLR) statistic used in the test and<a name="line.490"></a>
+<FONT color="green">491</FONT>         * {@link #gTest(double[], long[])} for information on how<a name="line.491"></a>
+<FONT color="green">492</FONT>         * the observed significance level is computed. The degrees of of freedom used<a name="line.492"></a>
+<FONT color="green">493</FONT>         * to perform the test is one less than the common length of the input observed<a name="line.493"></a>
+<FONT color="green">494</FONT>         * count arrays. &lt;/p&gt;<a name="line.494"></a>
+<FONT color="green">495</FONT>         *<a name="line.495"></a>
+<FONT color="green">496</FONT>         * &lt;strong&gt;Preconditions&lt;/strong&gt;: &lt;ul&gt;<a name="line.496"></a>
+<FONT color="green">497</FONT>         * &lt;li&gt;Observed counts must be non-negative. &lt;/li&gt;<a name="line.497"></a>
+<FONT color="green">498</FONT>         * &lt;li&gt;Observed counts for a specific bin must not both be zero. &lt;/li&gt;<a name="line.498"></a>
+<FONT color="green">499</FONT>         * &lt;li&gt;Observed counts for a specific sample must not all be 0. &lt;/li&gt;<a name="line.499"></a>
+<FONT color="green">500</FONT>         * &lt;li&gt;The arrays {@code observed1} and {@code observed2} must<a name="line.500"></a>
+<FONT color="green">501</FONT>         * have the same length and their common length must be at least 2. &lt;/li&gt;<a name="line.501"></a>
+<FONT color="green">502</FONT>         * &lt;li&gt;{@code 0 &lt; alpha &lt; 0.5} &lt;/li&gt;&lt;/ul&gt;&lt;/p&gt;<a name="line.502"></a>
+<FONT color="green">503</FONT>         *<a name="line.503"></a>
+<FONT color="green">504</FONT>         * &lt;p&gt;If any of the preconditions are not met, a<a name="line.504"></a>
+<FONT color="green">505</FONT>         * {@code MathIllegalArgumentException} is thrown.&lt;/p&gt;<a name="line.505"></a>
+<FONT color="green">506</FONT>         *<a name="line.506"></a>
+<FONT color="green">507</FONT>         * @param observed1 array of observed frequency counts of the first data set<a name="line.507"></a>
+<FONT color="green">508</FONT>         * @param observed2 array of observed frequency counts of the second data<a name="line.508"></a>
+<FONT color="green">509</FONT>         * set<a name="line.509"></a>
+<FONT color="green">510</FONT>         * @param alpha significance level of the test<a name="line.510"></a>
+<FONT color="green">511</FONT>         * @return true iff null hypothesis can be rejected with confidence 1 -<a name="line.511"></a>
+<FONT color="green">512</FONT>         * alpha<a name="line.512"></a>
+<FONT color="green">513</FONT>         * @throws DimensionMismatchException the the length of the arrays does not<a name="line.513"></a>
+<FONT color="green">514</FONT>         * match<a name="line.514"></a>
+<FONT color="green">515</FONT>         * @throws NotPositiveException if any of the entries in {@code observed1} or<a name="line.515"></a>
+<FONT color="green">516</FONT>         * {@code observed2} are negative<a name="line.516"></a>
+<FONT color="green">517</FONT>         * @throws ZeroException if either all counts of {@code observed1} or<a name="line.517"></a>
+<FONT color="green">518</FONT>         * {@code observed2} are zero, or if the count at some index is<a name="line.518"></a>
+<FONT color="green">519</FONT>         * zero for both arrays<a name="line.519"></a>
+<FONT color="green">520</FONT>         * @throws OutOfRangeException if {@code alpha} is not in the range<a name="line.520"></a>
+<FONT color="green">521</FONT>         * (0, 0.5]<a name="line.521"></a>
+<FONT color="green">522</FONT>         * @throws MaxCountExceededException if an error occurs performing the test<a name="line.522"></a>
+<FONT color="green">523</FONT>         */<a name="line.523"></a>
+<FONT color="green">524</FONT>        public boolean gTestDataSetsComparison(<a name="line.524"></a>
+<FONT color="green">525</FONT>                final long[] observed1,<a name="line.525"></a>
+<FONT color="green">526</FONT>                final long[] observed2,<a name="line.526"></a>
+<FONT color="green">527</FONT>                final double alpha)<a name="line.527"></a>
+<FONT color="green">528</FONT>                throws DimensionMismatchException, NotPositiveException,<a name="line.528"></a>
+<FONT color="green">529</FONT>                ZeroException, OutOfRangeException, MaxCountExceededException {<a name="line.529"></a>
+<FONT color="green">530</FONT>    <a name="line.530"></a>
+<FONT color="green">531</FONT>            if (alpha &lt;= 0 || alpha &gt; 0.5) {<a name="line.531"></a>
+<FONT color="green">532</FONT>                throw new OutOfRangeException(<a name="line.532"></a>
+<FONT color="green">533</FONT>                        LocalizedFormats.OUT_OF_BOUND_SIGNIFICANCE_LEVEL, alpha, 0, 0.5);<a name="line.533"></a>
+<FONT color="green">534</FONT>            }<a name="line.534"></a>
+<FONT color="green">535</FONT>            return gTestDataSetsComparison(observed1, observed2) &lt; alpha;<a name="line.535"></a>
+<FONT color="green">536</FONT>        }<a name="line.536"></a>
+<FONT color="green">537</FONT>    }<a name="line.537"></a>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</PRE>
+</BODY>
+</HTML>

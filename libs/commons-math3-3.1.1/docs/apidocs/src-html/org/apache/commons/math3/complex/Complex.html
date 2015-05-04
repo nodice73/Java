@@ -1,0 +1,1297 @@
+<HTML>
+<BODY BGCOLOR="white">
+<PRE>
+<FONT color="green">001</FONT>    /*<a name="line.1"></a>
+<FONT color="green">002</FONT>     * Licensed to the Apache Software Foundation (ASF) under one or more<a name="line.2"></a>
+<FONT color="green">003</FONT>     * contributor license agreements.  See the NOTICE file distributed with<a name="line.3"></a>
+<FONT color="green">004</FONT>     * this work for additional information regarding copyright ownership.<a name="line.4"></a>
+<FONT color="green">005</FONT>     * The ASF licenses this file to You under the Apache License, Version 2.0<a name="line.5"></a>
+<FONT color="green">006</FONT>     * (the "License"); you may not use this file except in compliance with<a name="line.6"></a>
+<FONT color="green">007</FONT>     * the License.  You may obtain a copy of the License at<a name="line.7"></a>
+<FONT color="green">008</FONT>     *<a name="line.8"></a>
+<FONT color="green">009</FONT>     *      http://www.apache.org/licenses/LICENSE-2.0<a name="line.9"></a>
+<FONT color="green">010</FONT>     *<a name="line.10"></a>
+<FONT color="green">011</FONT>     * Unless required by applicable law or agreed to in writing, software<a name="line.11"></a>
+<FONT color="green">012</FONT>     * distributed under the License is distributed on an "AS IS" BASIS,<a name="line.12"></a>
+<FONT color="green">013</FONT>     * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.<a name="line.13"></a>
+<FONT color="green">014</FONT>     * See the License for the specific language governing permissions and<a name="line.14"></a>
+<FONT color="green">015</FONT>     * limitations under the License.<a name="line.15"></a>
+<FONT color="green">016</FONT>     */<a name="line.16"></a>
+<FONT color="green">017</FONT>    <a name="line.17"></a>
+<FONT color="green">018</FONT>    package org.apache.commons.math3.complex;<a name="line.18"></a>
+<FONT color="green">019</FONT>    <a name="line.19"></a>
+<FONT color="green">020</FONT>    import java.io.Serializable;<a name="line.20"></a>
+<FONT color="green">021</FONT>    import java.util.ArrayList;<a name="line.21"></a>
+<FONT color="green">022</FONT>    import java.util.List;<a name="line.22"></a>
+<FONT color="green">023</FONT>    <a name="line.23"></a>
+<FONT color="green">024</FONT>    import org.apache.commons.math3.FieldElement;<a name="line.24"></a>
+<FONT color="green">025</FONT>    import org.apache.commons.math3.exception.NotPositiveException;<a name="line.25"></a>
+<FONT color="green">026</FONT>    import org.apache.commons.math3.exception.NullArgumentException;<a name="line.26"></a>
+<FONT color="green">027</FONT>    import org.apache.commons.math3.exception.util.LocalizedFormats;<a name="line.27"></a>
+<FONT color="green">028</FONT>    import org.apache.commons.math3.util.FastMath;<a name="line.28"></a>
+<FONT color="green">029</FONT>    import org.apache.commons.math3.util.MathUtils;<a name="line.29"></a>
+<FONT color="green">030</FONT>    <a name="line.30"></a>
+<FONT color="green">031</FONT>    /**<a name="line.31"></a>
+<FONT color="green">032</FONT>     * Representation of a Complex number, i.e. a number which has both a<a name="line.32"></a>
+<FONT color="green">033</FONT>     * real and imaginary part.<a name="line.33"></a>
+<FONT color="green">034</FONT>     * &lt;br/&gt;<a name="line.34"></a>
+<FONT color="green">035</FONT>     * Implementations of arithmetic operations handle {@code NaN} and<a name="line.35"></a>
+<FONT color="green">036</FONT>     * infinite values according to the rules for {@link java.lang.Double}, i.e.<a name="line.36"></a>
+<FONT color="green">037</FONT>     * {@link #equals} is an equivalence relation for all instances that have<a name="line.37"></a>
+<FONT color="green">038</FONT>     * a {@code NaN} in either real or imaginary part, e.g. the following are<a name="line.38"></a>
+<FONT color="green">039</FONT>     * considered equal:<a name="line.39"></a>
+<FONT color="green">040</FONT>     * &lt;ul&gt;<a name="line.40"></a>
+<FONT color="green">041</FONT>     *  &lt;li&gt;{@code 1 + NaNi}&lt;/li&gt;<a name="line.41"></a>
+<FONT color="green">042</FONT>     *  &lt;li&gt;{@code NaN + i}&lt;/li&gt;<a name="line.42"></a>
+<FONT color="green">043</FONT>     *  &lt;li&gt;{@code NaN + NaNi}&lt;/li&gt;<a name="line.43"></a>
+<FONT color="green">044</FONT>     * &lt;/ul&gt;<a name="line.44"></a>
+<FONT color="green">045</FONT>     * Note that this is in contradiction with the IEEE-754 standard for floating<a name="line.45"></a>
+<FONT color="green">046</FONT>     * point numbers (according to which the test {@code x == x} must fail if<a name="line.46"></a>
+<FONT color="green">047</FONT>     * {@code x} is {@code NaN}). The method<a name="line.47"></a>
+<FONT color="green">048</FONT>     * {@link org.apache.commons.math3.util.Precision#equals(double,double,int)<a name="line.48"></a>
+<FONT color="green">049</FONT>     * equals for primitive double} in {@link org.apache.commons.math3.util.Precision}<a name="line.49"></a>
+<FONT color="green">050</FONT>     * conforms with IEEE-754 while this class conforms with the standard behavior<a name="line.50"></a>
+<FONT color="green">051</FONT>     * for Java object types.<a name="line.51"></a>
+<FONT color="green">052</FONT>     * &lt;br/&gt;<a name="line.52"></a>
+<FONT color="green">053</FONT>     * Implements Serializable since 2.0<a name="line.53"></a>
+<FONT color="green">054</FONT>     *<a name="line.54"></a>
+<FONT color="green">055</FONT>     * @version $Id: Complex.java 1416643 2012-12-03 19:37:14Z tn $<a name="line.55"></a>
+<FONT color="green">056</FONT>     */<a name="line.56"></a>
+<FONT color="green">057</FONT>    public class Complex implements FieldElement&lt;Complex&gt;, Serializable  {<a name="line.57"></a>
+<FONT color="green">058</FONT>        /** The square root of -1. A number representing "0.0 + 1.0i" */<a name="line.58"></a>
+<FONT color="green">059</FONT>        public static final Complex I = new Complex(0.0, 1.0);<a name="line.59"></a>
+<FONT color="green">060</FONT>        // CHECKSTYLE: stop ConstantName<a name="line.60"></a>
+<FONT color="green">061</FONT>        /** A complex number representing "NaN + NaNi" */<a name="line.61"></a>
+<FONT color="green">062</FONT>        public static final Complex NaN = new Complex(Double.NaN, Double.NaN);<a name="line.62"></a>
+<FONT color="green">063</FONT>        // CHECKSTYLE: resume ConstantName<a name="line.63"></a>
+<FONT color="green">064</FONT>        /** A complex number representing "+INF + INFi" */<a name="line.64"></a>
+<FONT color="green">065</FONT>        public static final Complex INF = new Complex(Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);<a name="line.65"></a>
+<FONT color="green">066</FONT>        /** A complex number representing "1.0 + 0.0i" */<a name="line.66"></a>
+<FONT color="green">067</FONT>        public static final Complex ONE = new Complex(1.0, 0.0);<a name="line.67"></a>
+<FONT color="green">068</FONT>        /** A complex number representing "0.0 + 0.0i" */<a name="line.68"></a>
+<FONT color="green">069</FONT>        public static final Complex ZERO = new Complex(0.0, 0.0);<a name="line.69"></a>
+<FONT color="green">070</FONT>    <a name="line.70"></a>
+<FONT color="green">071</FONT>        /** Serializable version identifier */<a name="line.71"></a>
+<FONT color="green">072</FONT>        private static final long serialVersionUID = -6195664516687396620L;<a name="line.72"></a>
+<FONT color="green">073</FONT>    <a name="line.73"></a>
+<FONT color="green">074</FONT>        /** The imaginary part. */<a name="line.74"></a>
+<FONT color="green">075</FONT>        private final double imaginary;<a name="line.75"></a>
+<FONT color="green">076</FONT>        /** The real part. */<a name="line.76"></a>
+<FONT color="green">077</FONT>        private final double real;<a name="line.77"></a>
+<FONT color="green">078</FONT>        /** Record whether this complex number is equal to NaN. */<a name="line.78"></a>
+<FONT color="green">079</FONT>        private final transient boolean isNaN;<a name="line.79"></a>
+<FONT color="green">080</FONT>        /** Record whether this complex number is infinite. */<a name="line.80"></a>
+<FONT color="green">081</FONT>        private final transient boolean isInfinite;<a name="line.81"></a>
+<FONT color="green">082</FONT>    <a name="line.82"></a>
+<FONT color="green">083</FONT>        /**<a name="line.83"></a>
+<FONT color="green">084</FONT>         * Create a complex number given only the real part.<a name="line.84"></a>
+<FONT color="green">085</FONT>         *<a name="line.85"></a>
+<FONT color="green">086</FONT>         * @param real Real part.<a name="line.86"></a>
+<FONT color="green">087</FONT>         */<a name="line.87"></a>
+<FONT color="green">088</FONT>        public Complex(double real) {<a name="line.88"></a>
+<FONT color="green">089</FONT>            this(real, 0.0);<a name="line.89"></a>
+<FONT color="green">090</FONT>        }<a name="line.90"></a>
+<FONT color="green">091</FONT>    <a name="line.91"></a>
+<FONT color="green">092</FONT>        /**<a name="line.92"></a>
+<FONT color="green">093</FONT>         * Create a complex number given the real and imaginary parts.<a name="line.93"></a>
+<FONT color="green">094</FONT>         *<a name="line.94"></a>
+<FONT color="green">095</FONT>         * @param real Real part.<a name="line.95"></a>
+<FONT color="green">096</FONT>         * @param imaginary Imaginary part.<a name="line.96"></a>
+<FONT color="green">097</FONT>         */<a name="line.97"></a>
+<FONT color="green">098</FONT>        public Complex(double real, double imaginary) {<a name="line.98"></a>
+<FONT color="green">099</FONT>            this.real = real;<a name="line.99"></a>
+<FONT color="green">100</FONT>            this.imaginary = imaginary;<a name="line.100"></a>
+<FONT color="green">101</FONT>    <a name="line.101"></a>
+<FONT color="green">102</FONT>            isNaN = Double.isNaN(real) || Double.isNaN(imaginary);<a name="line.102"></a>
+<FONT color="green">103</FONT>            isInfinite = !isNaN &amp;&amp;<a name="line.103"></a>
+<FONT color="green">104</FONT>                (Double.isInfinite(real) || Double.isInfinite(imaginary));<a name="line.104"></a>
+<FONT color="green">105</FONT>        }<a name="line.105"></a>
+<FONT color="green">106</FONT>    <a name="line.106"></a>
+<FONT color="green">107</FONT>        /**<a name="line.107"></a>
+<FONT color="green">108</FONT>         * Return the absolute value of this complex number.<a name="line.108"></a>
+<FONT color="green">109</FONT>         * Returns {@code NaN} if either real or imaginary part is {@code NaN}<a name="line.109"></a>
+<FONT color="green">110</FONT>         * and {@code Double.POSITIVE_INFINITY} if neither part is {@code NaN},<a name="line.110"></a>
+<FONT color="green">111</FONT>         * but at least one part is infinite.<a name="line.111"></a>
+<FONT color="green">112</FONT>         *<a name="line.112"></a>
+<FONT color="green">113</FONT>         * @return the absolute value.<a name="line.113"></a>
+<FONT color="green">114</FONT>         */<a name="line.114"></a>
+<FONT color="green">115</FONT>        public double abs() {<a name="line.115"></a>
+<FONT color="green">116</FONT>            if (isNaN) {<a name="line.116"></a>
+<FONT color="green">117</FONT>                return Double.NaN;<a name="line.117"></a>
+<FONT color="green">118</FONT>            }<a name="line.118"></a>
+<FONT color="green">119</FONT>            if (isInfinite()) {<a name="line.119"></a>
+<FONT color="green">120</FONT>                return Double.POSITIVE_INFINITY;<a name="line.120"></a>
+<FONT color="green">121</FONT>            }<a name="line.121"></a>
+<FONT color="green">122</FONT>            if (FastMath.abs(real) &lt; FastMath.abs(imaginary)) {<a name="line.122"></a>
+<FONT color="green">123</FONT>                if (imaginary == 0.0) {<a name="line.123"></a>
+<FONT color="green">124</FONT>                    return FastMath.abs(real);<a name="line.124"></a>
+<FONT color="green">125</FONT>                }<a name="line.125"></a>
+<FONT color="green">126</FONT>                double q = real / imaginary;<a name="line.126"></a>
+<FONT color="green">127</FONT>                return FastMath.abs(imaginary) * FastMath.sqrt(1 + q * q);<a name="line.127"></a>
+<FONT color="green">128</FONT>            } else {<a name="line.128"></a>
+<FONT color="green">129</FONT>                if (real == 0.0) {<a name="line.129"></a>
+<FONT color="green">130</FONT>                    return FastMath.abs(imaginary);<a name="line.130"></a>
+<FONT color="green">131</FONT>                }<a name="line.131"></a>
+<FONT color="green">132</FONT>                double q = imaginary / real;<a name="line.132"></a>
+<FONT color="green">133</FONT>                return FastMath.abs(real) * FastMath.sqrt(1 + q * q);<a name="line.133"></a>
+<FONT color="green">134</FONT>            }<a name="line.134"></a>
+<FONT color="green">135</FONT>        }<a name="line.135"></a>
+<FONT color="green">136</FONT>    <a name="line.136"></a>
+<FONT color="green">137</FONT>        /**<a name="line.137"></a>
+<FONT color="green">138</FONT>         * Returns a {@code Complex} whose value is<a name="line.138"></a>
+<FONT color="green">139</FONT>         * {@code (this + addend)}.<a name="line.139"></a>
+<FONT color="green">140</FONT>         * Uses the definitional formula<a name="line.140"></a>
+<FONT color="green">141</FONT>         * &lt;pre&gt;<a name="line.141"></a>
+<FONT color="green">142</FONT>         *  &lt;code&gt;<a name="line.142"></a>
+<FONT color="green">143</FONT>         *   (a + bi) + (c + di) = (a+c) + (b+d)i<a name="line.143"></a>
+<FONT color="green">144</FONT>         *  &lt;/code&gt;<a name="line.144"></a>
+<FONT color="green">145</FONT>         * &lt;/pre&gt;<a name="line.145"></a>
+<FONT color="green">146</FONT>         * &lt;br/&gt;<a name="line.146"></a>
+<FONT color="green">147</FONT>         * If either {@code this} or {@code addend} has a {@code NaN} value in<a name="line.147"></a>
+<FONT color="green">148</FONT>         * either part, {@link #NaN} is returned; otherwise {@code Infinite}<a name="line.148"></a>
+<FONT color="green">149</FONT>         * and {@code NaN} values are returned in the parts of the result<a name="line.149"></a>
+<FONT color="green">150</FONT>         * according to the rules for {@link java.lang.Double} arithmetic.<a name="line.150"></a>
+<FONT color="green">151</FONT>         *<a name="line.151"></a>
+<FONT color="green">152</FONT>         * @param  addend Value to be added to this {@code Complex}.<a name="line.152"></a>
+<FONT color="green">153</FONT>         * @return {@code this + addend}.<a name="line.153"></a>
+<FONT color="green">154</FONT>         * @throws NullArgumentException if {@code addend} is {@code null}.<a name="line.154"></a>
+<FONT color="green">155</FONT>         */<a name="line.155"></a>
+<FONT color="green">156</FONT>        public Complex add(Complex addend) throws NullArgumentException {<a name="line.156"></a>
+<FONT color="green">157</FONT>            MathUtils.checkNotNull(addend);<a name="line.157"></a>
+<FONT color="green">158</FONT>            if (isNaN || addend.isNaN) {<a name="line.158"></a>
+<FONT color="green">159</FONT>                return NaN;<a name="line.159"></a>
+<FONT color="green">160</FONT>            }<a name="line.160"></a>
+<FONT color="green">161</FONT>    <a name="line.161"></a>
+<FONT color="green">162</FONT>            return createComplex(real + addend.getReal(),<a name="line.162"></a>
+<FONT color="green">163</FONT>                                 imaginary + addend.getImaginary());<a name="line.163"></a>
+<FONT color="green">164</FONT>        }<a name="line.164"></a>
+<FONT color="green">165</FONT>    <a name="line.165"></a>
+<FONT color="green">166</FONT>        /**<a name="line.166"></a>
+<FONT color="green">167</FONT>         * Returns a {@code Complex} whose value is {@code (this + addend)},<a name="line.167"></a>
+<FONT color="green">168</FONT>         * with {@code addend} interpreted as a real number.<a name="line.168"></a>
+<FONT color="green">169</FONT>         *<a name="line.169"></a>
+<FONT color="green">170</FONT>         * @param addend Value to be added to this {@code Complex}.<a name="line.170"></a>
+<FONT color="green">171</FONT>         * @return {@code this + addend}.<a name="line.171"></a>
+<FONT color="green">172</FONT>         * @see #add(Complex)<a name="line.172"></a>
+<FONT color="green">173</FONT>         */<a name="line.173"></a>
+<FONT color="green">174</FONT>        public Complex add(double addend) {<a name="line.174"></a>
+<FONT color="green">175</FONT>            if (isNaN || Double.isNaN(addend)) {<a name="line.175"></a>
+<FONT color="green">176</FONT>                return NaN;<a name="line.176"></a>
+<FONT color="green">177</FONT>            }<a name="line.177"></a>
+<FONT color="green">178</FONT>    <a name="line.178"></a>
+<FONT color="green">179</FONT>            return createComplex(real + addend, imaginary);<a name="line.179"></a>
+<FONT color="green">180</FONT>        }<a name="line.180"></a>
+<FONT color="green">181</FONT>    <a name="line.181"></a>
+<FONT color="green">182</FONT>         /**<a name="line.182"></a>
+<FONT color="green">183</FONT>         * Return the conjugate of this complex number.<a name="line.183"></a>
+<FONT color="green">184</FONT>         * The conjugate of {@code a + bi} is {@code a - bi}.<a name="line.184"></a>
+<FONT color="green">185</FONT>         * &lt;br/&gt;<a name="line.185"></a>
+<FONT color="green">186</FONT>         * {@link #NaN} is returned if either the real or imaginary<a name="line.186"></a>
+<FONT color="green">187</FONT>         * part of this Complex number equals {@code Double.NaN}.<a name="line.187"></a>
+<FONT color="green">188</FONT>         * &lt;br/&gt;<a name="line.188"></a>
+<FONT color="green">189</FONT>         * If the imaginary part is infinite, and the real part is not<a name="line.189"></a>
+<FONT color="green">190</FONT>         * {@code NaN}, the returned value has infinite imaginary part<a name="line.190"></a>
+<FONT color="green">191</FONT>         * of the opposite sign, e.g. the conjugate of<a name="line.191"></a>
+<FONT color="green">192</FONT>         * {@code 1 + POSITIVE_INFINITY i} is {@code 1 - NEGATIVE_INFINITY i}.<a name="line.192"></a>
+<FONT color="green">193</FONT>         *<a name="line.193"></a>
+<FONT color="green">194</FONT>         * @return the conjugate of this Complex object.<a name="line.194"></a>
+<FONT color="green">195</FONT>         */<a name="line.195"></a>
+<FONT color="green">196</FONT>        public Complex conjugate() {<a name="line.196"></a>
+<FONT color="green">197</FONT>            if (isNaN) {<a name="line.197"></a>
+<FONT color="green">198</FONT>                return NaN;<a name="line.198"></a>
+<FONT color="green">199</FONT>            }<a name="line.199"></a>
+<FONT color="green">200</FONT>    <a name="line.200"></a>
+<FONT color="green">201</FONT>            return createComplex(real, -imaginary);<a name="line.201"></a>
+<FONT color="green">202</FONT>        }<a name="line.202"></a>
+<FONT color="green">203</FONT>    <a name="line.203"></a>
+<FONT color="green">204</FONT>        /**<a name="line.204"></a>
+<FONT color="green">205</FONT>         * Returns a {@code Complex} whose value is<a name="line.205"></a>
+<FONT color="green">206</FONT>         * {@code (this / divisor)}.<a name="line.206"></a>
+<FONT color="green">207</FONT>         * Implements the definitional formula<a name="line.207"></a>
+<FONT color="green">208</FONT>         * &lt;pre&gt;<a name="line.208"></a>
+<FONT color="green">209</FONT>         *  &lt;code&gt;<a name="line.209"></a>
+<FONT color="green">210</FONT>         *    a + bi          ac + bd + (bc - ad)i<a name="line.210"></a>
+<FONT color="green">211</FONT>         *    ----------- = -------------------------<a name="line.211"></a>
+<FONT color="green">212</FONT>         *    c + di         c&lt;sup&gt;2&lt;/sup&gt; + d&lt;sup&gt;2&lt;/sup&gt;<a name="line.212"></a>
+<FONT color="green">213</FONT>         *  &lt;/code&gt;<a name="line.213"></a>
+<FONT color="green">214</FONT>         * &lt;/pre&gt;<a name="line.214"></a>
+<FONT color="green">215</FONT>         * but uses<a name="line.215"></a>
+<FONT color="green">216</FONT>         * &lt;a href="http://doi.acm.org/10.1145/1039813.1039814"&gt;<a name="line.216"></a>
+<FONT color="green">217</FONT>         * prescaling of operands&lt;/a&gt; to limit the effects of overflows and<a name="line.217"></a>
+<FONT color="green">218</FONT>         * underflows in the computation.<a name="line.218"></a>
+<FONT color="green">219</FONT>         * &lt;br/&gt;<a name="line.219"></a>
+<FONT color="green">220</FONT>         * {@code Infinite} and {@code NaN} values are handled according to the<a name="line.220"></a>
+<FONT color="green">221</FONT>         * following rules, applied in the order presented:<a name="line.221"></a>
+<FONT color="green">222</FONT>         * &lt;ul&gt;<a name="line.222"></a>
+<FONT color="green">223</FONT>         *  &lt;li&gt;If either {@code this} or {@code divisor} has a {@code NaN} value<a name="line.223"></a>
+<FONT color="green">224</FONT>         *   in either part, {@link #NaN} is returned.<a name="line.224"></a>
+<FONT color="green">225</FONT>         *  &lt;/li&gt;<a name="line.225"></a>
+<FONT color="green">226</FONT>         *  &lt;li&gt;If {@code divisor} equals {@link #ZERO}, {@link #NaN} is returned.<a name="line.226"></a>
+<FONT color="green">227</FONT>         *  &lt;/li&gt;<a name="line.227"></a>
+<FONT color="green">228</FONT>         *  &lt;li&gt;If {@code this} and {@code divisor} are both infinite,<a name="line.228"></a>
+<FONT color="green">229</FONT>         *   {@link #NaN} is returned.<a name="line.229"></a>
+<FONT color="green">230</FONT>         *  &lt;/li&gt;<a name="line.230"></a>
+<FONT color="green">231</FONT>         *  &lt;li&gt;If {@code this} is finite (i.e., has no {@code Infinite} or<a name="line.231"></a>
+<FONT color="green">232</FONT>         *   {@code NaN} parts) and {@code divisor} is infinite (one or both parts<a name="line.232"></a>
+<FONT color="green">233</FONT>         *   infinite), {@link #ZERO} is returned.<a name="line.233"></a>
+<FONT color="green">234</FONT>         *  &lt;/li&gt;<a name="line.234"></a>
+<FONT color="green">235</FONT>         *  &lt;li&gt;If {@code this} is infinite and {@code divisor} is finite,<a name="line.235"></a>
+<FONT color="green">236</FONT>         *   {@code NaN} values are returned in the parts of the result if the<a name="line.236"></a>
+<FONT color="green">237</FONT>         *   {@link java.lang.Double} rules applied to the definitional formula<a name="line.237"></a>
+<FONT color="green">238</FONT>         *   force {@code NaN} results.<a name="line.238"></a>
+<FONT color="green">239</FONT>         *  &lt;/li&gt;<a name="line.239"></a>
+<FONT color="green">240</FONT>         * &lt;/ul&gt;<a name="line.240"></a>
+<FONT color="green">241</FONT>         *<a name="line.241"></a>
+<FONT color="green">242</FONT>         * @param divisor Value by which this {@code Complex} is to be divided.<a name="line.242"></a>
+<FONT color="green">243</FONT>         * @return {@code this / divisor}.<a name="line.243"></a>
+<FONT color="green">244</FONT>         * @throws NullArgumentException if {@code divisor} is {@code null}.<a name="line.244"></a>
+<FONT color="green">245</FONT>         */<a name="line.245"></a>
+<FONT color="green">246</FONT>        public Complex divide(Complex divisor)<a name="line.246"></a>
+<FONT color="green">247</FONT>            throws NullArgumentException {<a name="line.247"></a>
+<FONT color="green">248</FONT>            MathUtils.checkNotNull(divisor);<a name="line.248"></a>
+<FONT color="green">249</FONT>            if (isNaN || divisor.isNaN) {<a name="line.249"></a>
+<FONT color="green">250</FONT>                return NaN;<a name="line.250"></a>
+<FONT color="green">251</FONT>            }<a name="line.251"></a>
+<FONT color="green">252</FONT>    <a name="line.252"></a>
+<FONT color="green">253</FONT>            final double c = divisor.getReal();<a name="line.253"></a>
+<FONT color="green">254</FONT>            final double d = divisor.getImaginary();<a name="line.254"></a>
+<FONT color="green">255</FONT>            if (c == 0.0 &amp;&amp; d == 0.0) {<a name="line.255"></a>
+<FONT color="green">256</FONT>                return NaN;<a name="line.256"></a>
+<FONT color="green">257</FONT>            }<a name="line.257"></a>
+<FONT color="green">258</FONT>    <a name="line.258"></a>
+<FONT color="green">259</FONT>            if (divisor.isInfinite() &amp;&amp; !isInfinite()) {<a name="line.259"></a>
+<FONT color="green">260</FONT>                return ZERO;<a name="line.260"></a>
+<FONT color="green">261</FONT>            }<a name="line.261"></a>
+<FONT color="green">262</FONT>    <a name="line.262"></a>
+<FONT color="green">263</FONT>            if (FastMath.abs(c) &lt; FastMath.abs(d)) {<a name="line.263"></a>
+<FONT color="green">264</FONT>                double q = c / d;<a name="line.264"></a>
+<FONT color="green">265</FONT>                double denominator = c * q + d;<a name="line.265"></a>
+<FONT color="green">266</FONT>                return createComplex((real * q + imaginary) / denominator,<a name="line.266"></a>
+<FONT color="green">267</FONT>                    (imaginary * q - real) / denominator);<a name="line.267"></a>
+<FONT color="green">268</FONT>            } else {<a name="line.268"></a>
+<FONT color="green">269</FONT>                double q = d / c;<a name="line.269"></a>
+<FONT color="green">270</FONT>                double denominator = d * q + c;<a name="line.270"></a>
+<FONT color="green">271</FONT>                return createComplex((imaginary * q + real) / denominator,<a name="line.271"></a>
+<FONT color="green">272</FONT>                    (imaginary - real * q) / denominator);<a name="line.272"></a>
+<FONT color="green">273</FONT>            }<a name="line.273"></a>
+<FONT color="green">274</FONT>        }<a name="line.274"></a>
+<FONT color="green">275</FONT>    <a name="line.275"></a>
+<FONT color="green">276</FONT>        /**<a name="line.276"></a>
+<FONT color="green">277</FONT>         * Returns a {@code Complex} whose value is {@code (this / divisor)},<a name="line.277"></a>
+<FONT color="green">278</FONT>         * with {@code divisor} interpreted as a real number.<a name="line.278"></a>
+<FONT color="green">279</FONT>         *<a name="line.279"></a>
+<FONT color="green">280</FONT>         * @param  divisor Value by which this {@code Complex} is to be divided.<a name="line.280"></a>
+<FONT color="green">281</FONT>         * @return {@code this / divisor}.<a name="line.281"></a>
+<FONT color="green">282</FONT>         * @see #divide(Complex)<a name="line.282"></a>
+<FONT color="green">283</FONT>         */<a name="line.283"></a>
+<FONT color="green">284</FONT>        public Complex divide(double divisor) {<a name="line.284"></a>
+<FONT color="green">285</FONT>            if (isNaN || Double.isNaN(divisor)) {<a name="line.285"></a>
+<FONT color="green">286</FONT>                return NaN;<a name="line.286"></a>
+<FONT color="green">287</FONT>            }<a name="line.287"></a>
+<FONT color="green">288</FONT>            if (divisor == 0d) {<a name="line.288"></a>
+<FONT color="green">289</FONT>                return NaN;<a name="line.289"></a>
+<FONT color="green">290</FONT>            }<a name="line.290"></a>
+<FONT color="green">291</FONT>            if (Double.isInfinite(divisor)) {<a name="line.291"></a>
+<FONT color="green">292</FONT>                return !isInfinite() ? ZERO : NaN;<a name="line.292"></a>
+<FONT color="green">293</FONT>            }<a name="line.293"></a>
+<FONT color="green">294</FONT>            return createComplex(real / divisor,<a name="line.294"></a>
+<FONT color="green">295</FONT>                                 imaginary  / divisor);<a name="line.295"></a>
+<FONT color="green">296</FONT>        }<a name="line.296"></a>
+<FONT color="green">297</FONT>    <a name="line.297"></a>
+<FONT color="green">298</FONT>        /** {@inheritDoc} */<a name="line.298"></a>
+<FONT color="green">299</FONT>        public Complex reciprocal() {<a name="line.299"></a>
+<FONT color="green">300</FONT>            if (isNaN) {<a name="line.300"></a>
+<FONT color="green">301</FONT>                return NaN;<a name="line.301"></a>
+<FONT color="green">302</FONT>            }<a name="line.302"></a>
+<FONT color="green">303</FONT>    <a name="line.303"></a>
+<FONT color="green">304</FONT>            if (real == 0.0 &amp;&amp; imaginary == 0.0) {<a name="line.304"></a>
+<FONT color="green">305</FONT>                return NaN;<a name="line.305"></a>
+<FONT color="green">306</FONT>            }<a name="line.306"></a>
+<FONT color="green">307</FONT>    <a name="line.307"></a>
+<FONT color="green">308</FONT>            if (isInfinite) {<a name="line.308"></a>
+<FONT color="green">309</FONT>                return ZERO;<a name="line.309"></a>
+<FONT color="green">310</FONT>            }<a name="line.310"></a>
+<FONT color="green">311</FONT>    <a name="line.311"></a>
+<FONT color="green">312</FONT>            if (FastMath.abs(real) &lt; FastMath.abs(imaginary)) {<a name="line.312"></a>
+<FONT color="green">313</FONT>                double q = real / imaginary;<a name="line.313"></a>
+<FONT color="green">314</FONT>                double scale = 1. / (real * q + imaginary);<a name="line.314"></a>
+<FONT color="green">315</FONT>                return createComplex(scale * q, -scale);<a name="line.315"></a>
+<FONT color="green">316</FONT>            } else {<a name="line.316"></a>
+<FONT color="green">317</FONT>                double q = imaginary / real;<a name="line.317"></a>
+<FONT color="green">318</FONT>                double scale = 1. / (imaginary * q + real);<a name="line.318"></a>
+<FONT color="green">319</FONT>                return createComplex(scale, -scale * q);<a name="line.319"></a>
+<FONT color="green">320</FONT>            }<a name="line.320"></a>
+<FONT color="green">321</FONT>        }<a name="line.321"></a>
+<FONT color="green">322</FONT>    <a name="line.322"></a>
+<FONT color="green">323</FONT>        /**<a name="line.323"></a>
+<FONT color="green">324</FONT>         * Test for the equality of two Complex objects.<a name="line.324"></a>
+<FONT color="green">325</FONT>         * If both the real and imaginary parts of two complex numbers<a name="line.325"></a>
+<FONT color="green">326</FONT>         * are exactly the same, and neither is {@code Double.NaN}, the two<a name="line.326"></a>
+<FONT color="green">327</FONT>         * Complex objects are considered to be equal.<a name="line.327"></a>
+<FONT color="green">328</FONT>         * All {@code NaN} values are considered to be equal - i.e, if either<a name="line.328"></a>
+<FONT color="green">329</FONT>         * (or both) real and imaginary parts of the complex number are equal<a name="line.329"></a>
+<FONT color="green">330</FONT>         * to {@code Double.NaN}, the complex number is equal to<a name="line.330"></a>
+<FONT color="green">331</FONT>         * {@code NaN}.<a name="line.331"></a>
+<FONT color="green">332</FONT>         *<a name="line.332"></a>
+<FONT color="green">333</FONT>         * @param other Object to test for equality to this<a name="line.333"></a>
+<FONT color="green">334</FONT>         * @return true if two Complex objects are equal, false if object is<a name="line.334"></a>
+<FONT color="green">335</FONT>         * {@code null}, not an instance of Complex, or not equal to this Complex<a name="line.335"></a>
+<FONT color="green">336</FONT>         * instance.<a name="line.336"></a>
+<FONT color="green">337</FONT>         */<a name="line.337"></a>
+<FONT color="green">338</FONT>        @Override<a name="line.338"></a>
+<FONT color="green">339</FONT>        public boolean equals(Object other) {<a name="line.339"></a>
+<FONT color="green">340</FONT>            if (this == other) {<a name="line.340"></a>
+<FONT color="green">341</FONT>                return true;<a name="line.341"></a>
+<FONT color="green">342</FONT>            }<a name="line.342"></a>
+<FONT color="green">343</FONT>            if (other instanceof Complex){<a name="line.343"></a>
+<FONT color="green">344</FONT>                Complex c = (Complex)other;<a name="line.344"></a>
+<FONT color="green">345</FONT>                if (c.isNaN) {<a name="line.345"></a>
+<FONT color="green">346</FONT>                    return isNaN;<a name="line.346"></a>
+<FONT color="green">347</FONT>                } else {<a name="line.347"></a>
+<FONT color="green">348</FONT>                    return (real == c.real) &amp;&amp; (imaginary == c.imaginary);<a name="line.348"></a>
+<FONT color="green">349</FONT>                }<a name="line.349"></a>
+<FONT color="green">350</FONT>            }<a name="line.350"></a>
+<FONT color="green">351</FONT>            return false;<a name="line.351"></a>
+<FONT color="green">352</FONT>        }<a name="line.352"></a>
+<FONT color="green">353</FONT>    <a name="line.353"></a>
+<FONT color="green">354</FONT>        /**<a name="line.354"></a>
+<FONT color="green">355</FONT>         * Get a hashCode for the complex number.<a name="line.355"></a>
+<FONT color="green">356</FONT>         * Any {@code Double.NaN} value in real or imaginary part produces<a name="line.356"></a>
+<FONT color="green">357</FONT>         * the same hash code {@code 7}.<a name="line.357"></a>
+<FONT color="green">358</FONT>         *<a name="line.358"></a>
+<FONT color="green">359</FONT>         * @return a hash code value for this object.<a name="line.359"></a>
+<FONT color="green">360</FONT>         */<a name="line.360"></a>
+<FONT color="green">361</FONT>        @Override<a name="line.361"></a>
+<FONT color="green">362</FONT>        public int hashCode() {<a name="line.362"></a>
+<FONT color="green">363</FONT>            if (isNaN) {<a name="line.363"></a>
+<FONT color="green">364</FONT>                return 7;<a name="line.364"></a>
+<FONT color="green">365</FONT>            }<a name="line.365"></a>
+<FONT color="green">366</FONT>            return 37 * (17 * MathUtils.hash(imaginary) +<a name="line.366"></a>
+<FONT color="green">367</FONT>                MathUtils.hash(real));<a name="line.367"></a>
+<FONT color="green">368</FONT>        }<a name="line.368"></a>
+<FONT color="green">369</FONT>    <a name="line.369"></a>
+<FONT color="green">370</FONT>        /**<a name="line.370"></a>
+<FONT color="green">371</FONT>         * Access the imaginary part.<a name="line.371"></a>
+<FONT color="green">372</FONT>         *<a name="line.372"></a>
+<FONT color="green">373</FONT>         * @return the imaginary part.<a name="line.373"></a>
+<FONT color="green">374</FONT>         */<a name="line.374"></a>
+<FONT color="green">375</FONT>        public double getImaginary() {<a name="line.375"></a>
+<FONT color="green">376</FONT>            return imaginary;<a name="line.376"></a>
+<FONT color="green">377</FONT>        }<a name="line.377"></a>
+<FONT color="green">378</FONT>    <a name="line.378"></a>
+<FONT color="green">379</FONT>        /**<a name="line.379"></a>
+<FONT color="green">380</FONT>         * Access the real part.<a name="line.380"></a>
+<FONT color="green">381</FONT>         *<a name="line.381"></a>
+<FONT color="green">382</FONT>         * @return the real part.<a name="line.382"></a>
+<FONT color="green">383</FONT>         */<a name="line.383"></a>
+<FONT color="green">384</FONT>        public double getReal() {<a name="line.384"></a>
+<FONT color="green">385</FONT>            return real;<a name="line.385"></a>
+<FONT color="green">386</FONT>        }<a name="line.386"></a>
+<FONT color="green">387</FONT>    <a name="line.387"></a>
+<FONT color="green">388</FONT>        /**<a name="line.388"></a>
+<FONT color="green">389</FONT>         * Checks whether either or both parts of this complex number is<a name="line.389"></a>
+<FONT color="green">390</FONT>         * {@code NaN}.<a name="line.390"></a>
+<FONT color="green">391</FONT>         *<a name="line.391"></a>
+<FONT color="green">392</FONT>         * @return true if either or both parts of this complex number is<a name="line.392"></a>
+<FONT color="green">393</FONT>         * {@code NaN}; false otherwise.<a name="line.393"></a>
+<FONT color="green">394</FONT>         */<a name="line.394"></a>
+<FONT color="green">395</FONT>        public boolean isNaN() {<a name="line.395"></a>
+<FONT color="green">396</FONT>            return isNaN;<a name="line.396"></a>
+<FONT color="green">397</FONT>        }<a name="line.397"></a>
+<FONT color="green">398</FONT>    <a name="line.398"></a>
+<FONT color="green">399</FONT>        /**<a name="line.399"></a>
+<FONT color="green">400</FONT>         * Checks whether either the real or imaginary part of this complex number<a name="line.400"></a>
+<FONT color="green">401</FONT>         * takes an infinite value (either {@code Double.POSITIVE_INFINITY} or<a name="line.401"></a>
+<FONT color="green">402</FONT>         * {@code Double.NEGATIVE_INFINITY}) and neither part<a name="line.402"></a>
+<FONT color="green">403</FONT>         * is {@code NaN}.<a name="line.403"></a>
+<FONT color="green">404</FONT>         *<a name="line.404"></a>
+<FONT color="green">405</FONT>         * @return true if one or both parts of this complex number are infinite<a name="line.405"></a>
+<FONT color="green">406</FONT>         * and neither part is {@code NaN}.<a name="line.406"></a>
+<FONT color="green">407</FONT>         */<a name="line.407"></a>
+<FONT color="green">408</FONT>        public boolean isInfinite() {<a name="line.408"></a>
+<FONT color="green">409</FONT>            return isInfinite;<a name="line.409"></a>
+<FONT color="green">410</FONT>        }<a name="line.410"></a>
+<FONT color="green">411</FONT>    <a name="line.411"></a>
+<FONT color="green">412</FONT>        /**<a name="line.412"></a>
+<FONT color="green">413</FONT>         * Returns a {@code Complex} whose value is {@code this * factor}.<a name="line.413"></a>
+<FONT color="green">414</FONT>         * Implements preliminary checks for {@code NaN} and infinity followed by<a name="line.414"></a>
+<FONT color="green">415</FONT>         * the definitional formula:<a name="line.415"></a>
+<FONT color="green">416</FONT>         * &lt;pre&gt;<a name="line.416"></a>
+<FONT color="green">417</FONT>         *  &lt;code&gt;<a name="line.417"></a>
+<FONT color="green">418</FONT>         *   (a + bi)(c + di) = (ac - bd) + (ad + bc)i<a name="line.418"></a>
+<FONT color="green">419</FONT>         *  &lt;/code&gt;<a name="line.419"></a>
+<FONT color="green">420</FONT>         * &lt;/pre&gt;<a name="line.420"></a>
+<FONT color="green">421</FONT>         * Returns {@link #NaN} if either {@code this} or {@code factor} has one or<a name="line.421"></a>
+<FONT color="green">422</FONT>         * more {@code NaN} parts.<a name="line.422"></a>
+<FONT color="green">423</FONT>         * &lt;br/&gt;<a name="line.423"></a>
+<FONT color="green">424</FONT>         * Returns {@link #INF} if neither {@code this} nor {@code factor} has one<a name="line.424"></a>
+<FONT color="green">425</FONT>         * or more {@code NaN} parts and if either {@code this} or {@code factor}<a name="line.425"></a>
+<FONT color="green">426</FONT>         * has one or more infinite parts (same result is returned regardless of<a name="line.426"></a>
+<FONT color="green">427</FONT>         * the sign of the components).<a name="line.427"></a>
+<FONT color="green">428</FONT>         * &lt;br/&gt;<a name="line.428"></a>
+<FONT color="green">429</FONT>         * Returns finite values in components of the result per the definitional<a name="line.429"></a>
+<FONT color="green">430</FONT>         * formula in all remaining cases.<a name="line.430"></a>
+<FONT color="green">431</FONT>         *<a name="line.431"></a>
+<FONT color="green">432</FONT>         * @param  factor value to be multiplied by this {@code Complex}.<a name="line.432"></a>
+<FONT color="green">433</FONT>         * @return {@code this * factor}.<a name="line.433"></a>
+<FONT color="green">434</FONT>         * @throws NullArgumentException if {@code factor} is {@code null}.<a name="line.434"></a>
+<FONT color="green">435</FONT>         */<a name="line.435"></a>
+<FONT color="green">436</FONT>        public Complex multiply(Complex factor)<a name="line.436"></a>
+<FONT color="green">437</FONT>            throws NullArgumentException {<a name="line.437"></a>
+<FONT color="green">438</FONT>            MathUtils.checkNotNull(factor);<a name="line.438"></a>
+<FONT color="green">439</FONT>            if (isNaN || factor.isNaN) {<a name="line.439"></a>
+<FONT color="green">440</FONT>                return NaN;<a name="line.440"></a>
+<FONT color="green">441</FONT>            }<a name="line.441"></a>
+<FONT color="green">442</FONT>            if (Double.isInfinite(real) ||<a name="line.442"></a>
+<FONT color="green">443</FONT>                Double.isInfinite(imaginary) ||<a name="line.443"></a>
+<FONT color="green">444</FONT>                Double.isInfinite(factor.real) ||<a name="line.444"></a>
+<FONT color="green">445</FONT>                Double.isInfinite(factor.imaginary)) {<a name="line.445"></a>
+<FONT color="green">446</FONT>                // we don't use isInfinite() to avoid testing for NaN again<a name="line.446"></a>
+<FONT color="green">447</FONT>                return INF;<a name="line.447"></a>
+<FONT color="green">448</FONT>            }<a name="line.448"></a>
+<FONT color="green">449</FONT>            return createComplex(real * factor.real - imaginary * factor.imaginary,<a name="line.449"></a>
+<FONT color="green">450</FONT>                                 real * factor.imaginary + imaginary * factor.real);<a name="line.450"></a>
+<FONT color="green">451</FONT>        }<a name="line.451"></a>
+<FONT color="green">452</FONT>    <a name="line.452"></a>
+<FONT color="green">453</FONT>        /**<a name="line.453"></a>
+<FONT color="green">454</FONT>         * Returns a {@code Complex} whose value is {@code this * factor}, with {@code factor}<a name="line.454"></a>
+<FONT color="green">455</FONT>         * interpreted as a integer number.<a name="line.455"></a>
+<FONT color="green">456</FONT>         *<a name="line.456"></a>
+<FONT color="green">457</FONT>         * @param  factor value to be multiplied by this {@code Complex}.<a name="line.457"></a>
+<FONT color="green">458</FONT>         * @return {@code this * factor}.<a name="line.458"></a>
+<FONT color="green">459</FONT>         * @see #multiply(Complex)<a name="line.459"></a>
+<FONT color="green">460</FONT>         */<a name="line.460"></a>
+<FONT color="green">461</FONT>        public Complex multiply(final int factor) {<a name="line.461"></a>
+<FONT color="green">462</FONT>            if (isNaN) {<a name="line.462"></a>
+<FONT color="green">463</FONT>                return NaN;<a name="line.463"></a>
+<FONT color="green">464</FONT>            }<a name="line.464"></a>
+<FONT color="green">465</FONT>            if (Double.isInfinite(real) ||<a name="line.465"></a>
+<FONT color="green">466</FONT>                Double.isInfinite(imaginary)) {<a name="line.466"></a>
+<FONT color="green">467</FONT>                return INF;<a name="line.467"></a>
+<FONT color="green">468</FONT>            }<a name="line.468"></a>
+<FONT color="green">469</FONT>            return createComplex(real * factor, imaginary * factor);<a name="line.469"></a>
+<FONT color="green">470</FONT>        }<a name="line.470"></a>
+<FONT color="green">471</FONT>    <a name="line.471"></a>
+<FONT color="green">472</FONT>        /**<a name="line.472"></a>
+<FONT color="green">473</FONT>         * Returns a {@code Complex} whose value is {@code this * factor}, with {@code factor}<a name="line.473"></a>
+<FONT color="green">474</FONT>         * interpreted as a real number.<a name="line.474"></a>
+<FONT color="green">475</FONT>         *<a name="line.475"></a>
+<FONT color="green">476</FONT>         * @param  factor value to be multiplied by this {@code Complex}.<a name="line.476"></a>
+<FONT color="green">477</FONT>         * @return {@code this * factor}.<a name="line.477"></a>
+<FONT color="green">478</FONT>         * @see #multiply(Complex)<a name="line.478"></a>
+<FONT color="green">479</FONT>         */<a name="line.479"></a>
+<FONT color="green">480</FONT>        public Complex multiply(double factor) {<a name="line.480"></a>
+<FONT color="green">481</FONT>            if (isNaN || Double.isNaN(factor)) {<a name="line.481"></a>
+<FONT color="green">482</FONT>                return NaN;<a name="line.482"></a>
+<FONT color="green">483</FONT>            }<a name="line.483"></a>
+<FONT color="green">484</FONT>            if (Double.isInfinite(real) ||<a name="line.484"></a>
+<FONT color="green">485</FONT>                Double.isInfinite(imaginary) ||<a name="line.485"></a>
+<FONT color="green">486</FONT>                Double.isInfinite(factor)) {<a name="line.486"></a>
+<FONT color="green">487</FONT>                // we don't use isInfinite() to avoid testing for NaN again<a name="line.487"></a>
+<FONT color="green">488</FONT>                return INF;<a name="line.488"></a>
+<FONT color="green">489</FONT>            }<a name="line.489"></a>
+<FONT color="green">490</FONT>            return createComplex(real * factor, imaginary * factor);<a name="line.490"></a>
+<FONT color="green">491</FONT>        }<a name="line.491"></a>
+<FONT color="green">492</FONT>    <a name="line.492"></a>
+<FONT color="green">493</FONT>        /**<a name="line.493"></a>
+<FONT color="green">494</FONT>         * Returns a {@code Complex} whose value is {@code (-this)}.<a name="line.494"></a>
+<FONT color="green">495</FONT>         * Returns {@code NaN} if either real or imaginary<a name="line.495"></a>
+<FONT color="green">496</FONT>         * part of this Complex number equals {@code Double.NaN}.<a name="line.496"></a>
+<FONT color="green">497</FONT>         *<a name="line.497"></a>
+<FONT color="green">498</FONT>         * @return {@code -this}.<a name="line.498"></a>
+<FONT color="green">499</FONT>         */<a name="line.499"></a>
+<FONT color="green">500</FONT>        public Complex negate() {<a name="line.500"></a>
+<FONT color="green">501</FONT>            if (isNaN) {<a name="line.501"></a>
+<FONT color="green">502</FONT>                return NaN;<a name="line.502"></a>
+<FONT color="green">503</FONT>            }<a name="line.503"></a>
+<FONT color="green">504</FONT>    <a name="line.504"></a>
+<FONT color="green">505</FONT>            return createComplex(-real, -imaginary);<a name="line.505"></a>
+<FONT color="green">506</FONT>        }<a name="line.506"></a>
+<FONT color="green">507</FONT>    <a name="line.507"></a>
+<FONT color="green">508</FONT>        /**<a name="line.508"></a>
+<FONT color="green">509</FONT>         * Returns a {@code Complex} whose value is<a name="line.509"></a>
+<FONT color="green">510</FONT>         * {@code (this - subtrahend)}.<a name="line.510"></a>
+<FONT color="green">511</FONT>         * Uses the definitional formula<a name="line.511"></a>
+<FONT color="green">512</FONT>         * &lt;pre&gt;<a name="line.512"></a>
+<FONT color="green">513</FONT>         *  &lt;code&gt;<a name="line.513"></a>
+<FONT color="green">514</FONT>         *   (a + bi) - (c + di) = (a-c) + (b-d)i<a name="line.514"></a>
+<FONT color="green">515</FONT>         *  &lt;/code&gt;<a name="line.515"></a>
+<FONT color="green">516</FONT>         * &lt;/pre&gt;<a name="line.516"></a>
+<FONT color="green">517</FONT>         * If either {@code this} or {@code subtrahend} has a {@code NaN]} value in either part,<a name="line.517"></a>
+<FONT color="green">518</FONT>         * {@link #NaN} is returned; otherwise infinite and {@code NaN} values are<a name="line.518"></a>
+<FONT color="green">519</FONT>         * returned in the parts of the result according to the rules for<a name="line.519"></a>
+<FONT color="green">520</FONT>         * {@link java.lang.Double} arithmetic.<a name="line.520"></a>
+<FONT color="green">521</FONT>         *<a name="line.521"></a>
+<FONT color="green">522</FONT>         * @param  subtrahend value to be subtracted from this {@code Complex}.<a name="line.522"></a>
+<FONT color="green">523</FONT>         * @return {@code this - subtrahend}.<a name="line.523"></a>
+<FONT color="green">524</FONT>         * @throws NullArgumentException if {@code subtrahend} is {@code null}.<a name="line.524"></a>
+<FONT color="green">525</FONT>         */<a name="line.525"></a>
+<FONT color="green">526</FONT>        public Complex subtract(Complex subtrahend)<a name="line.526"></a>
+<FONT color="green">527</FONT>            throws NullArgumentException {<a name="line.527"></a>
+<FONT color="green">528</FONT>            MathUtils.checkNotNull(subtrahend);<a name="line.528"></a>
+<FONT color="green">529</FONT>            if (isNaN || subtrahend.isNaN) {<a name="line.529"></a>
+<FONT color="green">530</FONT>                return NaN;<a name="line.530"></a>
+<FONT color="green">531</FONT>            }<a name="line.531"></a>
+<FONT color="green">532</FONT>    <a name="line.532"></a>
+<FONT color="green">533</FONT>            return createComplex(real - subtrahend.getReal(),<a name="line.533"></a>
+<FONT color="green">534</FONT>                                 imaginary - subtrahend.getImaginary());<a name="line.534"></a>
+<FONT color="green">535</FONT>        }<a name="line.535"></a>
+<FONT color="green">536</FONT>    <a name="line.536"></a>
+<FONT color="green">537</FONT>        /**<a name="line.537"></a>
+<FONT color="green">538</FONT>         * Returns a {@code Complex} whose value is<a name="line.538"></a>
+<FONT color="green">539</FONT>         * {@code (this - subtrahend)}.<a name="line.539"></a>
+<FONT color="green">540</FONT>         *<a name="line.540"></a>
+<FONT color="green">541</FONT>         * @param  subtrahend value to be subtracted from this {@code Complex}.<a name="line.541"></a>
+<FONT color="green">542</FONT>         * @return {@code this - subtrahend}.<a name="line.542"></a>
+<FONT color="green">543</FONT>         * @see #subtract(Complex)<a name="line.543"></a>
+<FONT color="green">544</FONT>         */<a name="line.544"></a>
+<FONT color="green">545</FONT>        public Complex subtract(double subtrahend) {<a name="line.545"></a>
+<FONT color="green">546</FONT>            if (isNaN || Double.isNaN(subtrahend)) {<a name="line.546"></a>
+<FONT color="green">547</FONT>                return NaN;<a name="line.547"></a>
+<FONT color="green">548</FONT>            }<a name="line.548"></a>
+<FONT color="green">549</FONT>            return createComplex(real - subtrahend, imaginary);<a name="line.549"></a>
+<FONT color="green">550</FONT>        }<a name="line.550"></a>
+<FONT color="green">551</FONT>    <a name="line.551"></a>
+<FONT color="green">552</FONT>        /**<a name="line.552"></a>
+<FONT color="green">553</FONT>         * Compute the<a name="line.553"></a>
+<FONT color="green">554</FONT>         * &lt;a href="http://mathworld.wolfram.com/InverseCosine.html" TARGET="_top"&gt;<a name="line.554"></a>
+<FONT color="green">555</FONT>         * inverse cosine&lt;/a&gt; of this complex number.<a name="line.555"></a>
+<FONT color="green">556</FONT>         * Implements the formula:<a name="line.556"></a>
+<FONT color="green">557</FONT>         * &lt;pre&gt;<a name="line.557"></a>
+<FONT color="green">558</FONT>         *  &lt;code&gt;<a name="line.558"></a>
+<FONT color="green">559</FONT>         *   acos(z) = -i (log(z + i (sqrt(1 - z&lt;sup&gt;2&lt;/sup&gt;))))<a name="line.559"></a>
+<FONT color="green">560</FONT>         *  &lt;/code&gt;<a name="line.560"></a>
+<FONT color="green">561</FONT>         * &lt;/pre&gt;<a name="line.561"></a>
+<FONT color="green">562</FONT>         * Returns {@link Complex#NaN} if either real or imaginary part of the<a name="line.562"></a>
+<FONT color="green">563</FONT>         * input argument is {@code NaN} or infinite.<a name="line.563"></a>
+<FONT color="green">564</FONT>         *<a name="line.564"></a>
+<FONT color="green">565</FONT>         * @return the inverse cosine of this complex number.<a name="line.565"></a>
+<FONT color="green">566</FONT>         * @since 1.2<a name="line.566"></a>
+<FONT color="green">567</FONT>         */<a name="line.567"></a>
+<FONT color="green">568</FONT>        public Complex acos() {<a name="line.568"></a>
+<FONT color="green">569</FONT>            if (isNaN) {<a name="line.569"></a>
+<FONT color="green">570</FONT>                return NaN;<a name="line.570"></a>
+<FONT color="green">571</FONT>            }<a name="line.571"></a>
+<FONT color="green">572</FONT>    <a name="line.572"></a>
+<FONT color="green">573</FONT>            return this.add(this.sqrt1z().multiply(I)).log().multiply(I.negate());<a name="line.573"></a>
+<FONT color="green">574</FONT>        }<a name="line.574"></a>
+<FONT color="green">575</FONT>    <a name="line.575"></a>
+<FONT color="green">576</FONT>        /**<a name="line.576"></a>
+<FONT color="green">577</FONT>         * Compute the<a name="line.577"></a>
+<FONT color="green">578</FONT>         * &lt;a href="http://mathworld.wolfram.com/InverseSine.html" TARGET="_top"&gt;<a name="line.578"></a>
+<FONT color="green">579</FONT>         * inverse sine&lt;/a&gt; of this complex number.<a name="line.579"></a>
+<FONT color="green">580</FONT>         * Implements the formula:<a name="line.580"></a>
+<FONT color="green">581</FONT>         * &lt;pre&gt;<a name="line.581"></a>
+<FONT color="green">582</FONT>         *  &lt;code&gt;<a name="line.582"></a>
+<FONT color="green">583</FONT>         *   asin(z) = -i (log(sqrt(1 - z&lt;sup&gt;2&lt;/sup&gt;) + iz))<a name="line.583"></a>
+<FONT color="green">584</FONT>         *  &lt;/code&gt;<a name="line.584"></a>
+<FONT color="green">585</FONT>         * &lt;/pre&gt;<a name="line.585"></a>
+<FONT color="green">586</FONT>         * Returns {@link Complex#NaN} if either real or imaginary part of the<a name="line.586"></a>
+<FONT color="green">587</FONT>         * input argument is {@code NaN} or infinite.<a name="line.587"></a>
+<FONT color="green">588</FONT>         *<a name="line.588"></a>
+<FONT color="green">589</FONT>         * @return the inverse sine of this complex number.<a name="line.589"></a>
+<FONT color="green">590</FONT>         * @since 1.2<a name="line.590"></a>
+<FONT color="green">591</FONT>         */<a name="line.591"></a>
+<FONT color="green">592</FONT>        public Complex asin() {<a name="line.592"></a>
+<FONT color="green">593</FONT>            if (isNaN) {<a name="line.593"></a>
+<FONT color="green">594</FONT>                return NaN;<a name="line.594"></a>
+<FONT color="green">595</FONT>            }<a name="line.595"></a>
+<FONT color="green">596</FONT>    <a name="line.596"></a>
+<FONT color="green">597</FONT>            return sqrt1z().add(this.multiply(I)).log().multiply(I.negate());<a name="line.597"></a>
+<FONT color="green">598</FONT>        }<a name="line.598"></a>
+<FONT color="green">599</FONT>    <a name="line.599"></a>
+<FONT color="green">600</FONT>        /**<a name="line.600"></a>
+<FONT color="green">601</FONT>         * Compute the<a name="line.601"></a>
+<FONT color="green">602</FONT>         * &lt;a href="http://mathworld.wolfram.com/InverseTangent.html" TARGET="_top"&gt;<a name="line.602"></a>
+<FONT color="green">603</FONT>         * inverse tangent&lt;/a&gt; of this complex number.<a name="line.603"></a>
+<FONT color="green">604</FONT>         * Implements the formula:<a name="line.604"></a>
+<FONT color="green">605</FONT>         * &lt;pre&gt;<a name="line.605"></a>
+<FONT color="green">606</FONT>         *  &lt;code&gt;<a name="line.606"></a>
+<FONT color="green">607</FONT>         *   atan(z) = (i/2) log((i + z)/(i - z))<a name="line.607"></a>
+<FONT color="green">608</FONT>         *  &lt;/code&gt;<a name="line.608"></a>
+<FONT color="green">609</FONT>         * &lt;/pre&gt;<a name="line.609"></a>
+<FONT color="green">610</FONT>         * Returns {@link Complex#NaN} if either real or imaginary part of the<a name="line.610"></a>
+<FONT color="green">611</FONT>         * input argument is {@code NaN} or infinite.<a name="line.611"></a>
+<FONT color="green">612</FONT>         *<a name="line.612"></a>
+<FONT color="green">613</FONT>         * @return the inverse tangent of this complex number<a name="line.613"></a>
+<FONT color="green">614</FONT>         * @since 1.2<a name="line.614"></a>
+<FONT color="green">615</FONT>         */<a name="line.615"></a>
+<FONT color="green">616</FONT>        public Complex atan() {<a name="line.616"></a>
+<FONT color="green">617</FONT>            if (isNaN) {<a name="line.617"></a>
+<FONT color="green">618</FONT>                return NaN;<a name="line.618"></a>
+<FONT color="green">619</FONT>            }<a name="line.619"></a>
+<FONT color="green">620</FONT>    <a name="line.620"></a>
+<FONT color="green">621</FONT>            return this.add(I).divide(I.subtract(this)).log()<a name="line.621"></a>
+<FONT color="green">622</FONT>                    .multiply(I.divide(createComplex(2.0, 0.0)));<a name="line.622"></a>
+<FONT color="green">623</FONT>        }<a name="line.623"></a>
+<FONT color="green">624</FONT>    <a name="line.624"></a>
+<FONT color="green">625</FONT>        /**<a name="line.625"></a>
+<FONT color="green">626</FONT>         * Compute the<a name="line.626"></a>
+<FONT color="green">627</FONT>         * &lt;a href="http://mathworld.wolfram.com/Cosine.html" TARGET="_top"&gt;<a name="line.627"></a>
+<FONT color="green">628</FONT>         * cosine&lt;/a&gt;<a name="line.628"></a>
+<FONT color="green">629</FONT>         * of this complex number.<a name="line.629"></a>
+<FONT color="green">630</FONT>         * Implements the formula:<a name="line.630"></a>
+<FONT color="green">631</FONT>         * &lt;pre&gt;<a name="line.631"></a>
+<FONT color="green">632</FONT>         *  &lt;code&gt;<a name="line.632"></a>
+<FONT color="green">633</FONT>         *   cos(a + bi) = cos(a)cosh(b) - sin(a)sinh(b)i<a name="line.633"></a>
+<FONT color="green">634</FONT>         *  &lt;/code&gt;<a name="line.634"></a>
+<FONT color="green">635</FONT>         * &lt;/pre&gt;<a name="line.635"></a>
+<FONT color="green">636</FONT>         * where the (real) functions on the right-hand side are<a name="line.636"></a>
+<FONT color="green">637</FONT>         * {@link java.lang.Math#sin}, {@link java.lang.Math#cos},<a name="line.637"></a>
+<FONT color="green">638</FONT>         * {@link FastMath#cosh} and {@link FastMath#sinh}.<a name="line.638"></a>
+<FONT color="green">639</FONT>         * &lt;br/&gt;<a name="line.639"></a>
+<FONT color="green">640</FONT>         * Returns {@link Complex#NaN} if either real or imaginary part of the<a name="line.640"></a>
+<FONT color="green">641</FONT>         * input argument is {@code NaN}.<a name="line.641"></a>
+<FONT color="green">642</FONT>         * &lt;br/&gt;<a name="line.642"></a>
+<FONT color="green">643</FONT>         * Infinite values in real or imaginary parts of the input may result in<a name="line.643"></a>
+<FONT color="green">644</FONT>         * infinite or NaN values returned in parts of the result.<a name="line.644"></a>
+<FONT color="green">645</FONT>         * &lt;pre&gt;<a name="line.645"></a>
+<FONT color="green">646</FONT>         *  Examples:<a name="line.646"></a>
+<FONT color="green">647</FONT>         *  &lt;code&gt;<a name="line.647"></a>
+<FONT color="green">648</FONT>         *   cos(1 &amp;plusmn; INFINITY i) = 1 &amp;#x2213; INFINITY i<a name="line.648"></a>
+<FONT color="green">649</FONT>         *   cos(&amp;plusmn;INFINITY + i) = NaN + NaN i<a name="line.649"></a>
+<FONT color="green">650</FONT>         *   cos(&amp;plusmn;INFINITY &amp;plusmn; INFINITY i) = NaN + NaN i<a name="line.650"></a>
+<FONT color="green">651</FONT>         *  &lt;/code&gt;<a name="line.651"></a>
+<FONT color="green">652</FONT>         * &lt;/pre&gt;<a name="line.652"></a>
+<FONT color="green">653</FONT>         *<a name="line.653"></a>
+<FONT color="green">654</FONT>         * @return the cosine of this complex number.<a name="line.654"></a>
+<FONT color="green">655</FONT>         * @since 1.2<a name="line.655"></a>
+<FONT color="green">656</FONT>         */<a name="line.656"></a>
+<FONT color="green">657</FONT>        public Complex cos() {<a name="line.657"></a>
+<FONT color="green">658</FONT>            if (isNaN) {<a name="line.658"></a>
+<FONT color="green">659</FONT>                return NaN;<a name="line.659"></a>
+<FONT color="green">660</FONT>            }<a name="line.660"></a>
+<FONT color="green">661</FONT>    <a name="line.661"></a>
+<FONT color="green">662</FONT>            return createComplex(FastMath.cos(real) * FastMath.cosh(imaginary),<a name="line.662"></a>
+<FONT color="green">663</FONT>                                 -FastMath.sin(real) * FastMath.sinh(imaginary));<a name="line.663"></a>
+<FONT color="green">664</FONT>        }<a name="line.664"></a>
+<FONT color="green">665</FONT>    <a name="line.665"></a>
+<FONT color="green">666</FONT>        /**<a name="line.666"></a>
+<FONT color="green">667</FONT>         * Compute the<a name="line.667"></a>
+<FONT color="green">668</FONT>         * &lt;a href="http://mathworld.wolfram.com/HyperbolicCosine.html" TARGET="_top"&gt;<a name="line.668"></a>
+<FONT color="green">669</FONT>         * hyperbolic cosine&lt;/a&gt; of this complex number.<a name="line.669"></a>
+<FONT color="green">670</FONT>         * Implements the formula:<a name="line.670"></a>
+<FONT color="green">671</FONT>         * &lt;pre&gt;<a name="line.671"></a>
+<FONT color="green">672</FONT>         *  &lt;code&gt;<a name="line.672"></a>
+<FONT color="green">673</FONT>         *   cosh(a + bi) = cosh(a)cos(b) + sinh(a)sin(b)i}<a name="line.673"></a>
+<FONT color="green">674</FONT>         *  &lt;/code&gt;<a name="line.674"></a>
+<FONT color="green">675</FONT>         * &lt;/pre&gt;<a name="line.675"></a>
+<FONT color="green">676</FONT>         * where the (real) functions on the right-hand side are<a name="line.676"></a>
+<FONT color="green">677</FONT>         * {@link java.lang.Math#sin}, {@link java.lang.Math#cos},<a name="line.677"></a>
+<FONT color="green">678</FONT>         * {@link FastMath#cosh} and {@link FastMath#sinh}.<a name="line.678"></a>
+<FONT color="green">679</FONT>         * &lt;br/&gt;<a name="line.679"></a>
+<FONT color="green">680</FONT>         * Returns {@link Complex#NaN} if either real or imaginary part of the<a name="line.680"></a>
+<FONT color="green">681</FONT>         * input argument is {@code NaN}.<a name="line.681"></a>
+<FONT color="green">682</FONT>         * &lt;br/&gt;<a name="line.682"></a>
+<FONT color="green">683</FONT>         * Infinite values in real or imaginary parts of the input may result in<a name="line.683"></a>
+<FONT color="green">684</FONT>         * infinite or NaN values returned in parts of the result.<a name="line.684"></a>
+<FONT color="green">685</FONT>         * &lt;pre&gt;<a name="line.685"></a>
+<FONT color="green">686</FONT>         *  Examples:<a name="line.686"></a>
+<FONT color="green">687</FONT>         *  &lt;code&gt;<a name="line.687"></a>
+<FONT color="green">688</FONT>         *   cosh(1 &amp;plusmn; INFINITY i) = NaN + NaN i<a name="line.688"></a>
+<FONT color="green">689</FONT>         *   cosh(&amp;plusmn;INFINITY + i) = INFINITY &amp;plusmn; INFINITY i<a name="line.689"></a>
+<FONT color="green">690</FONT>         *   cosh(&amp;plusmn;INFINITY &amp;plusmn; INFINITY i) = NaN + NaN i<a name="line.690"></a>
+<FONT color="green">691</FONT>         *  &lt;/code&gt;<a name="line.691"></a>
+<FONT color="green">692</FONT>         * &lt;/pre&gt;<a name="line.692"></a>
+<FONT color="green">693</FONT>         *<a name="line.693"></a>
+<FONT color="green">694</FONT>         * @return the hyperbolic cosine of this complex number.<a name="line.694"></a>
+<FONT color="green">695</FONT>         * @since 1.2<a name="line.695"></a>
+<FONT color="green">696</FONT>         */<a name="line.696"></a>
+<FONT color="green">697</FONT>        public Complex cosh() {<a name="line.697"></a>
+<FONT color="green">698</FONT>            if (isNaN) {<a name="line.698"></a>
+<FONT color="green">699</FONT>                return NaN;<a name="line.699"></a>
+<FONT color="green">700</FONT>            }<a name="line.700"></a>
+<FONT color="green">701</FONT>    <a name="line.701"></a>
+<FONT color="green">702</FONT>            return createComplex(FastMath.cosh(real) * FastMath.cos(imaginary),<a name="line.702"></a>
+<FONT color="green">703</FONT>                                 FastMath.sinh(real) * FastMath.sin(imaginary));<a name="line.703"></a>
+<FONT color="green">704</FONT>        }<a name="line.704"></a>
+<FONT color="green">705</FONT>    <a name="line.705"></a>
+<FONT color="green">706</FONT>        /**<a name="line.706"></a>
+<FONT color="green">707</FONT>         * Compute the<a name="line.707"></a>
+<FONT color="green">708</FONT>         * &lt;a href="http://mathworld.wolfram.com/ExponentialFunction.html" TARGET="_top"&gt;<a name="line.708"></a>
+<FONT color="green">709</FONT>         * exponential function&lt;/a&gt; of this complex number.<a name="line.709"></a>
+<FONT color="green">710</FONT>         * Implements the formula:<a name="line.710"></a>
+<FONT color="green">711</FONT>         * &lt;pre&gt;<a name="line.711"></a>
+<FONT color="green">712</FONT>         *  &lt;code&gt;<a name="line.712"></a>
+<FONT color="green">713</FONT>         *   exp(a + bi) = exp(a)cos(b) + exp(a)sin(b)i<a name="line.713"></a>
+<FONT color="green">714</FONT>         *  &lt;/code&gt;<a name="line.714"></a>
+<FONT color="green">715</FONT>         * &lt;/pre&gt;<a name="line.715"></a>
+<FONT color="green">716</FONT>         * where the (real) functions on the right-hand side are<a name="line.716"></a>
+<FONT color="green">717</FONT>         * {@link java.lang.Math#exp}, {@link java.lang.Math#cos}, and<a name="line.717"></a>
+<FONT color="green">718</FONT>         * {@link java.lang.Math#sin}.<a name="line.718"></a>
+<FONT color="green">719</FONT>         * &lt;br/&gt;<a name="line.719"></a>
+<FONT color="green">720</FONT>         * Returns {@link Complex#NaN} if either real or imaginary part of the<a name="line.720"></a>
+<FONT color="green">721</FONT>         * input argument is {@code NaN}.<a name="line.721"></a>
+<FONT color="green">722</FONT>         * &lt;br/&gt;<a name="line.722"></a>
+<FONT color="green">723</FONT>         * Infinite values in real or imaginary parts of the input may result in<a name="line.723"></a>
+<FONT color="green">724</FONT>         * infinite or NaN values returned in parts of the result.<a name="line.724"></a>
+<FONT color="green">725</FONT>         * &lt;pre&gt;<a name="line.725"></a>
+<FONT color="green">726</FONT>         *  Examples:<a name="line.726"></a>
+<FONT color="green">727</FONT>         *  &lt;code&gt;<a name="line.727"></a>
+<FONT color="green">728</FONT>         *   exp(1 &amp;plusmn; INFINITY i) = NaN + NaN i<a name="line.728"></a>
+<FONT color="green">729</FONT>         *   exp(INFINITY + i) = INFINITY + INFINITY i<a name="line.729"></a>
+<FONT color="green">730</FONT>         *   exp(-INFINITY + i) = 0 + 0i<a name="line.730"></a>
+<FONT color="green">731</FONT>         *   exp(&amp;plusmn;INFINITY &amp;plusmn; INFINITY i) = NaN + NaN i<a name="line.731"></a>
+<FONT color="green">732</FONT>         *  &lt;/code&gt;<a name="line.732"></a>
+<FONT color="green">733</FONT>         * &lt;/pre&gt;<a name="line.733"></a>
+<FONT color="green">734</FONT>         *<a name="line.734"></a>
+<FONT color="green">735</FONT>         * @return &lt;code&gt;&lt;i&gt;e&lt;/i&gt;&lt;sup&gt;this&lt;/sup&gt;&lt;/code&gt;.<a name="line.735"></a>
+<FONT color="green">736</FONT>         * @since 1.2<a name="line.736"></a>
+<FONT color="green">737</FONT>         */<a name="line.737"></a>
+<FONT color="green">738</FONT>        public Complex exp() {<a name="line.738"></a>
+<FONT color="green">739</FONT>            if (isNaN) {<a name="line.739"></a>
+<FONT color="green">740</FONT>                return NaN;<a name="line.740"></a>
+<FONT color="green">741</FONT>            }<a name="line.741"></a>
+<FONT color="green">742</FONT>    <a name="line.742"></a>
+<FONT color="green">743</FONT>            double expReal = FastMath.exp(real);<a name="line.743"></a>
+<FONT color="green">744</FONT>            return createComplex(expReal *  FastMath.cos(imaginary),<a name="line.744"></a>
+<FONT color="green">745</FONT>                                 expReal * FastMath.sin(imaginary));<a name="line.745"></a>
+<FONT color="green">746</FONT>        }<a name="line.746"></a>
+<FONT color="green">747</FONT>    <a name="line.747"></a>
+<FONT color="green">748</FONT>        /**<a name="line.748"></a>
+<FONT color="green">749</FONT>         * Compute the<a name="line.749"></a>
+<FONT color="green">750</FONT>         * &lt;a href="http://mathworld.wolfram.com/NaturalLogarithm.html" TARGET="_top"&gt;<a name="line.750"></a>
+<FONT color="green">751</FONT>         * natural logarithm&lt;/a&gt; of this complex number.<a name="line.751"></a>
+<FONT color="green">752</FONT>         * Implements the formula:<a name="line.752"></a>
+<FONT color="green">753</FONT>         * &lt;pre&gt;<a name="line.753"></a>
+<FONT color="green">754</FONT>         *  &lt;code&gt;<a name="line.754"></a>
+<FONT color="green">755</FONT>         *   log(a + bi) = ln(|a + bi|) + arg(a + bi)i<a name="line.755"></a>
+<FONT color="green">756</FONT>         *  &lt;/code&gt;<a name="line.756"></a>
+<FONT color="green">757</FONT>         * &lt;/pre&gt;<a name="line.757"></a>
+<FONT color="green">758</FONT>         * where ln on the right hand side is {@link java.lang.Math#log},<a name="line.758"></a>
+<FONT color="green">759</FONT>         * {@code |a + bi|} is the modulus, {@link Complex#abs},  and<a name="line.759"></a>
+<FONT color="green">760</FONT>         * {@code arg(a + bi) = }{@link java.lang.Math#atan2}(b, a).<a name="line.760"></a>
+<FONT color="green">761</FONT>         * &lt;br/&gt;<a name="line.761"></a>
+<FONT color="green">762</FONT>         * Returns {@link Complex#NaN} if either real or imaginary part of the<a name="line.762"></a>
+<FONT color="green">763</FONT>         * input argument is {@code NaN}.<a name="line.763"></a>
+<FONT color="green">764</FONT>         * &lt;br/&gt;<a name="line.764"></a>
+<FONT color="green">765</FONT>         * Infinite (or critical) values in real or imaginary parts of the input may<a name="line.765"></a>
+<FONT color="green">766</FONT>         * result in infinite or NaN values returned in parts of the result.<a name="line.766"></a>
+<FONT color="green">767</FONT>         * &lt;pre&gt;<a name="line.767"></a>
+<FONT color="green">768</FONT>         *  Examples:<a name="line.768"></a>
+<FONT color="green">769</FONT>         *  &lt;code&gt;<a name="line.769"></a>
+<FONT color="green">770</FONT>         *   log(1 &amp;plusmn; INFINITY i) = INFINITY &amp;plusmn; (&amp;pi;/2)i<a name="line.770"></a>
+<FONT color="green">771</FONT>         *   log(INFINITY + i) = INFINITY + 0i<a name="line.771"></a>
+<FONT color="green">772</FONT>         *   log(-INFINITY + i) = INFINITY + &amp;pi;i<a name="line.772"></a>
+<FONT color="green">773</FONT>         *   log(INFINITY &amp;plusmn; INFINITY i) = INFINITY &amp;plusmn; (&amp;pi;/4)i<a name="line.773"></a>
+<FONT color="green">774</FONT>         *   log(-INFINITY &amp;plusmn; INFINITY i) = INFINITY &amp;plusmn; (3&amp;pi;/4)i<a name="line.774"></a>
+<FONT color="green">775</FONT>         *   log(0 + 0i) = -INFINITY + 0i<a name="line.775"></a>
+<FONT color="green">776</FONT>         *  &lt;/code&gt;<a name="line.776"></a>
+<FONT color="green">777</FONT>         * &lt;/pre&gt;<a name="line.777"></a>
+<FONT color="green">778</FONT>         *<a name="line.778"></a>
+<FONT color="green">779</FONT>         * @return the value &lt;code&gt;ln &amp;nbsp; this&lt;/code&gt;, the natural logarithm<a name="line.779"></a>
+<FONT color="green">780</FONT>         * of {@code this}.<a name="line.780"></a>
+<FONT color="green">781</FONT>         * @since 1.2<a name="line.781"></a>
+<FONT color="green">782</FONT>         */<a name="line.782"></a>
+<FONT color="green">783</FONT>        public Complex log() {<a name="line.783"></a>
+<FONT color="green">784</FONT>            if (isNaN) {<a name="line.784"></a>
+<FONT color="green">785</FONT>                return NaN;<a name="line.785"></a>
+<FONT color="green">786</FONT>            }<a name="line.786"></a>
+<FONT color="green">787</FONT>    <a name="line.787"></a>
+<FONT color="green">788</FONT>            return createComplex(FastMath.log(abs()),<a name="line.788"></a>
+<FONT color="green">789</FONT>                                 FastMath.atan2(imaginary, real));<a name="line.789"></a>
+<FONT color="green">790</FONT>        }<a name="line.790"></a>
+<FONT color="green">791</FONT>    <a name="line.791"></a>
+<FONT color="green">792</FONT>        /**<a name="line.792"></a>
+<FONT color="green">793</FONT>         * Returns of value of this complex number raised to the power of {@code x}.<a name="line.793"></a>
+<FONT color="green">794</FONT>         * Implements the formula:<a name="line.794"></a>
+<FONT color="green">795</FONT>         * &lt;pre&gt;<a name="line.795"></a>
+<FONT color="green">796</FONT>         *  &lt;code&gt;<a name="line.796"></a>
+<FONT color="green">797</FONT>         *   y&lt;sup&gt;x&lt;/sup&gt; = exp(x&amp;middot;log(y))<a name="line.797"></a>
+<FONT color="green">798</FONT>         *  &lt;/code&gt;<a name="line.798"></a>
+<FONT color="green">799</FONT>         * &lt;/pre&gt;<a name="line.799"></a>
+<FONT color="green">800</FONT>         * where {@code exp} and {@code log} are {@link #exp} and<a name="line.800"></a>
+<FONT color="green">801</FONT>         * {@link #log}, respectively.<a name="line.801"></a>
+<FONT color="green">802</FONT>         * &lt;br/&gt;<a name="line.802"></a>
+<FONT color="green">803</FONT>         * Returns {@link Complex#NaN} if either real or imaginary part of the<a name="line.803"></a>
+<FONT color="green">804</FONT>         * input argument is {@code NaN} or infinite, or if {@code y}<a name="line.804"></a>
+<FONT color="green">805</FONT>         * equals {@link Complex#ZERO}.<a name="line.805"></a>
+<FONT color="green">806</FONT>         *<a name="line.806"></a>
+<FONT color="green">807</FONT>         * @param  x exponent to which this {@code Complex} is to be raised.<a name="line.807"></a>
+<FONT color="green">808</FONT>         * @return &lt;code&gt; this&lt;sup&gt;{@code x}&lt;/sup&gt;&lt;/code&gt;.<a name="line.808"></a>
+<FONT color="green">809</FONT>         * @throws NullArgumentException if x is {@code null}.<a name="line.809"></a>
+<FONT color="green">810</FONT>         * @since 1.2<a name="line.810"></a>
+<FONT color="green">811</FONT>         */<a name="line.811"></a>
+<FONT color="green">812</FONT>        public Complex pow(Complex x)<a name="line.812"></a>
+<FONT color="green">813</FONT>            throws NullArgumentException {<a name="line.813"></a>
+<FONT color="green">814</FONT>            MathUtils.checkNotNull(x);<a name="line.814"></a>
+<FONT color="green">815</FONT>            return this.log().multiply(x).exp();<a name="line.815"></a>
+<FONT color="green">816</FONT>        }<a name="line.816"></a>
+<FONT color="green">817</FONT>    <a name="line.817"></a>
+<FONT color="green">818</FONT>        /**<a name="line.818"></a>
+<FONT color="green">819</FONT>         * Returns of value of this complex number raised to the power of {@code x}.<a name="line.819"></a>
+<FONT color="green">820</FONT>         *<a name="line.820"></a>
+<FONT color="green">821</FONT>         * @param  x exponent to which this {@code Complex} is to be raised.<a name="line.821"></a>
+<FONT color="green">822</FONT>         * @return &lt;code&gt;this&lt;sup&gt;x&lt;/sup&gt;&lt;/code&gt;.<a name="line.822"></a>
+<FONT color="green">823</FONT>         * @see #pow(Complex)<a name="line.823"></a>
+<FONT color="green">824</FONT>         */<a name="line.824"></a>
+<FONT color="green">825</FONT>         public Complex pow(double x) {<a name="line.825"></a>
+<FONT color="green">826</FONT>            return this.log().multiply(x).exp();<a name="line.826"></a>
+<FONT color="green">827</FONT>        }<a name="line.827"></a>
+<FONT color="green">828</FONT>    <a name="line.828"></a>
+<FONT color="green">829</FONT>        /**<a name="line.829"></a>
+<FONT color="green">830</FONT>         * Compute the<a name="line.830"></a>
+<FONT color="green">831</FONT>         * &lt;a href="http://mathworld.wolfram.com/Sine.html" TARGET="_top"&gt;<a name="line.831"></a>
+<FONT color="green">832</FONT>         * sine&lt;/a&gt;<a name="line.832"></a>
+<FONT color="green">833</FONT>         * of this complex number.<a name="line.833"></a>
+<FONT color="green">834</FONT>         * Implements the formula:<a name="line.834"></a>
+<FONT color="green">835</FONT>         * &lt;pre&gt;<a name="line.835"></a>
+<FONT color="green">836</FONT>         *  &lt;code&gt;<a name="line.836"></a>
+<FONT color="green">837</FONT>         *   sin(a + bi) = sin(a)cosh(b) - cos(a)sinh(b)i<a name="line.837"></a>
+<FONT color="green">838</FONT>         *  &lt;/code&gt;<a name="line.838"></a>
+<FONT color="green">839</FONT>         * &lt;/pre&gt;<a name="line.839"></a>
+<FONT color="green">840</FONT>         * where the (real) functions on the right-hand side are<a name="line.840"></a>
+<FONT color="green">841</FONT>         * {@link java.lang.Math#sin}, {@link java.lang.Math#cos},<a name="line.841"></a>
+<FONT color="green">842</FONT>         * {@link FastMath#cosh} and {@link FastMath#sinh}.<a name="line.842"></a>
+<FONT color="green">843</FONT>         * &lt;br/&gt;<a name="line.843"></a>
+<FONT color="green">844</FONT>         * Returns {@link Complex#NaN} if either real or imaginary part of the<a name="line.844"></a>
+<FONT color="green">845</FONT>         * input argument is {@code NaN}.<a name="line.845"></a>
+<FONT color="green">846</FONT>         * &lt;br/&gt;<a name="line.846"></a>
+<FONT color="green">847</FONT>         * Infinite values in real or imaginary parts of the input may result in<a name="line.847"></a>
+<FONT color="green">848</FONT>         * infinite or {@code NaN} values returned in parts of the result.<a name="line.848"></a>
+<FONT color="green">849</FONT>         * &lt;pre&gt;<a name="line.849"></a>
+<FONT color="green">850</FONT>         *  Examples:<a name="line.850"></a>
+<FONT color="green">851</FONT>         *  &lt;code&gt;<a name="line.851"></a>
+<FONT color="green">852</FONT>         *   sin(1 &amp;plusmn; INFINITY i) = 1 &amp;plusmn; INFINITY i<a name="line.852"></a>
+<FONT color="green">853</FONT>         *   sin(&amp;plusmn;INFINITY + i) = NaN + NaN i<a name="line.853"></a>
+<FONT color="green">854</FONT>         *   sin(&amp;plusmn;INFINITY &amp;plusmn; INFINITY i) = NaN + NaN i<a name="line.854"></a>
+<FONT color="green">855</FONT>         *  &lt;/code&gt;<a name="line.855"></a>
+<FONT color="green">856</FONT>         * &lt;/pre&gt;<a name="line.856"></a>
+<FONT color="green">857</FONT>         *<a name="line.857"></a>
+<FONT color="green">858</FONT>         * @return the sine of this complex number.<a name="line.858"></a>
+<FONT color="green">859</FONT>         * @since 1.2<a name="line.859"></a>
+<FONT color="green">860</FONT>         */<a name="line.860"></a>
+<FONT color="green">861</FONT>        public Complex sin() {<a name="line.861"></a>
+<FONT color="green">862</FONT>            if (isNaN) {<a name="line.862"></a>
+<FONT color="green">863</FONT>                return NaN;<a name="line.863"></a>
+<FONT color="green">864</FONT>            }<a name="line.864"></a>
+<FONT color="green">865</FONT>    <a name="line.865"></a>
+<FONT color="green">866</FONT>            return createComplex(FastMath.sin(real) * FastMath.cosh(imaginary),<a name="line.866"></a>
+<FONT color="green">867</FONT>                                 FastMath.cos(real) * FastMath.sinh(imaginary));<a name="line.867"></a>
+<FONT color="green">868</FONT>        }<a name="line.868"></a>
+<FONT color="green">869</FONT>    <a name="line.869"></a>
+<FONT color="green">870</FONT>        /**<a name="line.870"></a>
+<FONT color="green">871</FONT>         * Compute the<a name="line.871"></a>
+<FONT color="green">872</FONT>         * &lt;a href="http://mathworld.wolfram.com/HyperbolicSine.html" TARGET="_top"&gt;<a name="line.872"></a>
+<FONT color="green">873</FONT>         * hyperbolic sine&lt;/a&gt; of this complex number.<a name="line.873"></a>
+<FONT color="green">874</FONT>         * Implements the formula:<a name="line.874"></a>
+<FONT color="green">875</FONT>         * &lt;pre&gt;<a name="line.875"></a>
+<FONT color="green">876</FONT>         *  &lt;code&gt;<a name="line.876"></a>
+<FONT color="green">877</FONT>         *   sinh(a + bi) = sinh(a)cos(b)) + cosh(a)sin(b)i<a name="line.877"></a>
+<FONT color="green">878</FONT>         *  &lt;/code&gt;<a name="line.878"></a>
+<FONT color="green">879</FONT>         * &lt;/pre&gt;<a name="line.879"></a>
+<FONT color="green">880</FONT>         * where the (real) functions on the right-hand side are<a name="line.880"></a>
+<FONT color="green">881</FONT>         * {@link java.lang.Math#sin}, {@link java.lang.Math#cos},<a name="line.881"></a>
+<FONT color="green">882</FONT>         * {@link FastMath#cosh} and {@link FastMath#sinh}.<a name="line.882"></a>
+<FONT color="green">883</FONT>         * &lt;br/&gt;<a name="line.883"></a>
+<FONT color="green">884</FONT>         * Returns {@link Complex#NaN} if either real or imaginary part of the<a name="line.884"></a>
+<FONT color="green">885</FONT>         * input argument is {@code NaN}.<a name="line.885"></a>
+<FONT color="green">886</FONT>         * &lt;br/&gt;<a name="line.886"></a>
+<FONT color="green">887</FONT>         * Infinite values in real or imaginary parts of the input may result in<a name="line.887"></a>
+<FONT color="green">888</FONT>         * infinite or NaN values returned in parts of the result.<a name="line.888"></a>
+<FONT color="green">889</FONT>         * &lt;pre&gt;<a name="line.889"></a>
+<FONT color="green">890</FONT>         *  Examples:<a name="line.890"></a>
+<FONT color="green">891</FONT>         *  &lt;code&gt;<a name="line.891"></a>
+<FONT color="green">892</FONT>         *   sinh(1 &amp;plusmn; INFINITY i) = NaN + NaN i<a name="line.892"></a>
+<FONT color="green">893</FONT>         *   sinh(&amp;plusmn;INFINITY + i) = &amp;plusmn; INFINITY + INFINITY i<a name="line.893"></a>
+<FONT color="green">894</FONT>         *   sinh(&amp;plusmn;INFINITY &amp;plusmn; INFINITY i) = NaN + NaN i<a name="line.894"></a>
+<FONT color="green">895</FONT>         *  &lt;/code&gt;<a name="line.895"></a>
+<FONT color="green">896</FONT>         * &lt;/pre&gt;<a name="line.896"></a>
+<FONT color="green">897</FONT>         *<a name="line.897"></a>
+<FONT color="green">898</FONT>         * @return the hyperbolic sine of {@code this}.<a name="line.898"></a>
+<FONT color="green">899</FONT>         * @since 1.2<a name="line.899"></a>
+<FONT color="green">900</FONT>         */<a name="line.900"></a>
+<FONT color="green">901</FONT>        public Complex sinh() {<a name="line.901"></a>
+<FONT color="green">902</FONT>            if (isNaN) {<a name="line.902"></a>
+<FONT color="green">903</FONT>                return NaN;<a name="line.903"></a>
+<FONT color="green">904</FONT>            }<a name="line.904"></a>
+<FONT color="green">905</FONT>    <a name="line.905"></a>
+<FONT color="green">906</FONT>            return createComplex(FastMath.sinh(real) * FastMath.cos(imaginary),<a name="line.906"></a>
+<FONT color="green">907</FONT>                FastMath.cosh(real) * FastMath.sin(imaginary));<a name="line.907"></a>
+<FONT color="green">908</FONT>        }<a name="line.908"></a>
+<FONT color="green">909</FONT>    <a name="line.909"></a>
+<FONT color="green">910</FONT>        /**<a name="line.910"></a>
+<FONT color="green">911</FONT>         * Compute the<a name="line.911"></a>
+<FONT color="green">912</FONT>         * &lt;a href="http://mathworld.wolfram.com/SquareRoot.html" TARGET="_top"&gt;<a name="line.912"></a>
+<FONT color="green">913</FONT>         * square root&lt;/a&gt; of this complex number.<a name="line.913"></a>
+<FONT color="green">914</FONT>         * Implements the following algorithm to compute {@code sqrt(a + bi)}:<a name="line.914"></a>
+<FONT color="green">915</FONT>         * &lt;ol&gt;&lt;li&gt;Let {@code t = sqrt((|a| + |a + bi|) / 2)}&lt;/li&gt;<a name="line.915"></a>
+<FONT color="green">916</FONT>         * &lt;li&gt;&lt;pre&gt;if {@code  a &amp;#8805; 0} return {@code t + (b/2t)i}<a name="line.916"></a>
+<FONT color="green">917</FONT>         *  else return {@code |b|/2t + sign(b)t i }&lt;/pre&gt;&lt;/li&gt;<a name="line.917"></a>
+<FONT color="green">918</FONT>         * &lt;/ol&gt;<a name="line.918"></a>
+<FONT color="green">919</FONT>         * where &lt;ul&gt;<a name="line.919"></a>
+<FONT color="green">920</FONT>         * &lt;li&gt;{@code |a| = }{@link Math#abs}(a)&lt;/li&gt;<a name="line.920"></a>
+<FONT color="green">921</FONT>         * &lt;li&gt;{@code |a + bi| = }{@link Complex#abs}(a + bi)&lt;/li&gt;<a name="line.921"></a>
+<FONT color="green">922</FONT>         * &lt;li&gt;{@code sign(b) =  }{@link FastMath#copySign(double,double) copySign(1d, b)}<a name="line.922"></a>
+<FONT color="green">923</FONT>         * &lt;/ul&gt;<a name="line.923"></a>
+<FONT color="green">924</FONT>         * &lt;br/&gt;<a name="line.924"></a>
+<FONT color="green">925</FONT>         * Returns {@link Complex#NaN} if either real or imaginary part of the<a name="line.925"></a>
+<FONT color="green">926</FONT>         * input argument is {@code NaN}.<a name="line.926"></a>
+<FONT color="green">927</FONT>         * &lt;br/&gt;<a name="line.927"></a>
+<FONT color="green">928</FONT>         * Infinite values in real or imaginary parts of the input may result in<a name="line.928"></a>
+<FONT color="green">929</FONT>         * infinite or NaN values returned in parts of the result.<a name="line.929"></a>
+<FONT color="green">930</FONT>         * &lt;pre&gt;<a name="line.930"></a>
+<FONT color="green">931</FONT>         *  Examples:<a name="line.931"></a>
+<FONT color="green">932</FONT>         *  &lt;code&gt;<a name="line.932"></a>
+<FONT color="green">933</FONT>         *   sqrt(1 &amp;plusmn; INFINITY i) = INFINITY + NaN i<a name="line.933"></a>
+<FONT color="green">934</FONT>         *   sqrt(INFINITY + i) = INFINITY + 0i<a name="line.934"></a>
+<FONT color="green">935</FONT>         *   sqrt(-INFINITY + i) = 0 + INFINITY i<a name="line.935"></a>
+<FONT color="green">936</FONT>         *   sqrt(INFINITY &amp;plusmn; INFINITY i) = INFINITY + NaN i<a name="line.936"></a>
+<FONT color="green">937</FONT>         *   sqrt(-INFINITY &amp;plusmn; INFINITY i) = NaN &amp;plusmn; INFINITY i<a name="line.937"></a>
+<FONT color="green">938</FONT>         *  &lt;/code&gt;<a name="line.938"></a>
+<FONT color="green">939</FONT>         * &lt;/pre&gt;<a name="line.939"></a>
+<FONT color="green">940</FONT>         *<a name="line.940"></a>
+<FONT color="green">941</FONT>         * @return the square root of {@code this}.<a name="line.941"></a>
+<FONT color="green">942</FONT>         * @since 1.2<a name="line.942"></a>
+<FONT color="green">943</FONT>         */<a name="line.943"></a>
+<FONT color="green">944</FONT>        public Complex sqrt() {<a name="line.944"></a>
+<FONT color="green">945</FONT>            if (isNaN) {<a name="line.945"></a>
+<FONT color="green">946</FONT>                return NaN;<a name="line.946"></a>
+<FONT color="green">947</FONT>            }<a name="line.947"></a>
+<FONT color="green">948</FONT>    <a name="line.948"></a>
+<FONT color="green">949</FONT>            if (real == 0.0 &amp;&amp; imaginary == 0.0) {<a name="line.949"></a>
+<FONT color="green">950</FONT>                return createComplex(0.0, 0.0);<a name="line.950"></a>
+<FONT color="green">951</FONT>            }<a name="line.951"></a>
+<FONT color="green">952</FONT>    <a name="line.952"></a>
+<FONT color="green">953</FONT>            double t = FastMath.sqrt((FastMath.abs(real) + abs()) / 2.0);<a name="line.953"></a>
+<FONT color="green">954</FONT>            if (real &gt;= 0.0) {<a name="line.954"></a>
+<FONT color="green">955</FONT>                return createComplex(t, imaginary / (2.0 * t));<a name="line.955"></a>
+<FONT color="green">956</FONT>            } else {<a name="line.956"></a>
+<FONT color="green">957</FONT>                return createComplex(FastMath.abs(imaginary) / (2.0 * t),<a name="line.957"></a>
+<FONT color="green">958</FONT>                                     FastMath.copySign(1d, imaginary) * t);<a name="line.958"></a>
+<FONT color="green">959</FONT>            }<a name="line.959"></a>
+<FONT color="green">960</FONT>        }<a name="line.960"></a>
+<FONT color="green">961</FONT>    <a name="line.961"></a>
+<FONT color="green">962</FONT>        /**<a name="line.962"></a>
+<FONT color="green">963</FONT>         * Compute the<a name="line.963"></a>
+<FONT color="green">964</FONT>         * &lt;a href="http://mathworld.wolfram.com/SquareRoot.html" TARGET="_top"&gt;<a name="line.964"></a>
+<FONT color="green">965</FONT>         * square root&lt;/a&gt; of &lt;code&gt;1 - this&lt;sup&gt;2&lt;/sup&gt;&lt;/code&gt; for this complex<a name="line.965"></a>
+<FONT color="green">966</FONT>         * number.<a name="line.966"></a>
+<FONT color="green">967</FONT>         * Computes the result directly as<a name="line.967"></a>
+<FONT color="green">968</FONT>         * {@code sqrt(ONE.subtract(z.multiply(z)))}.<a name="line.968"></a>
+<FONT color="green">969</FONT>         * &lt;br/&gt;<a name="line.969"></a>
+<FONT color="green">970</FONT>         * Returns {@link Complex#NaN} if either real or imaginary part of the<a name="line.970"></a>
+<FONT color="green">971</FONT>         * input argument is {@code NaN}.<a name="line.971"></a>
+<FONT color="green">972</FONT>         * &lt;br/&gt;<a name="line.972"></a>
+<FONT color="green">973</FONT>         * Infinite values in real or imaginary parts of the input may result in<a name="line.973"></a>
+<FONT color="green">974</FONT>         * infinite or NaN values returned in parts of the result.<a name="line.974"></a>
+<FONT color="green">975</FONT>         *<a name="line.975"></a>
+<FONT color="green">976</FONT>         * @return the square root of &lt;code&gt;1 - this&lt;sup&gt;2&lt;/sup&gt;&lt;/code&gt;.<a name="line.976"></a>
+<FONT color="green">977</FONT>         * @since 1.2<a name="line.977"></a>
+<FONT color="green">978</FONT>         */<a name="line.978"></a>
+<FONT color="green">979</FONT>        public Complex sqrt1z() {<a name="line.979"></a>
+<FONT color="green">980</FONT>            return createComplex(1.0, 0.0).subtract(this.multiply(this)).sqrt();<a name="line.980"></a>
+<FONT color="green">981</FONT>        }<a name="line.981"></a>
+<FONT color="green">982</FONT>    <a name="line.982"></a>
+<FONT color="green">983</FONT>        /**<a name="line.983"></a>
+<FONT color="green">984</FONT>         * Compute the<a name="line.984"></a>
+<FONT color="green">985</FONT>         * &lt;a href="http://mathworld.wolfram.com/Tangent.html" TARGET="_top"&gt;<a name="line.985"></a>
+<FONT color="green">986</FONT>         * tangent&lt;/a&gt; of this complex number.<a name="line.986"></a>
+<FONT color="green">987</FONT>         * Implements the formula:<a name="line.987"></a>
+<FONT color="green">988</FONT>         * &lt;pre&gt;<a name="line.988"></a>
+<FONT color="green">989</FONT>         *  &lt;code&gt;<a name="line.989"></a>
+<FONT color="green">990</FONT>         *   tan(a + bi) = sin(2a)/(cos(2a)+cosh(2b)) + [sinh(2b)/(cos(2a)+cosh(2b))]i<a name="line.990"></a>
+<FONT color="green">991</FONT>         *  &lt;/code&gt;<a name="line.991"></a>
+<FONT color="green">992</FONT>         * &lt;/pre&gt;<a name="line.992"></a>
+<FONT color="green">993</FONT>         * where the (real) functions on the right-hand side are<a name="line.993"></a>
+<FONT color="green">994</FONT>         * {@link FastMath#sin}, {@link FastMath#cos}, {@link FastMath#cosh} and<a name="line.994"></a>
+<FONT color="green">995</FONT>         * {@link FastMath#sinh}.<a name="line.995"></a>
+<FONT color="green">996</FONT>         * &lt;br/&gt;<a name="line.996"></a>
+<FONT color="green">997</FONT>         * Returns {@link Complex#NaN} if either real or imaginary part of the<a name="line.997"></a>
+<FONT color="green">998</FONT>         * input argument is {@code NaN}.<a name="line.998"></a>
+<FONT color="green">999</FONT>         * &lt;br/&gt;<a name="line.999"></a>
+<FONT color="green">1000</FONT>         * Infinite (or critical) values in real or imaginary parts of the input may<a name="line.1000"></a>
+<FONT color="green">1001</FONT>         * result in infinite or NaN values returned in parts of the result.<a name="line.1001"></a>
+<FONT color="green">1002</FONT>         * &lt;pre&gt;<a name="line.1002"></a>
+<FONT color="green">1003</FONT>         *  Examples:<a name="line.1003"></a>
+<FONT color="green">1004</FONT>         *  &lt;code&gt;<a name="line.1004"></a>
+<FONT color="green">1005</FONT>         *   tan(a &amp;plusmn; INFINITY i) = 0 &amp;plusmn; i<a name="line.1005"></a>
+<FONT color="green">1006</FONT>         *   tan(&amp;plusmn;INFINITY + bi) = NaN + NaN i<a name="line.1006"></a>
+<FONT color="green">1007</FONT>         *   tan(&amp;plusmn;INFINITY &amp;plusmn; INFINITY i) = NaN + NaN i<a name="line.1007"></a>
+<FONT color="green">1008</FONT>         *   tan(&amp;plusmn;&amp;pi;/2 + 0 i) = &amp;plusmn;INFINITY + NaN i<a name="line.1008"></a>
+<FONT color="green">1009</FONT>         *  &lt;/code&gt;<a name="line.1009"></a>
+<FONT color="green">1010</FONT>         * &lt;/pre&gt;<a name="line.1010"></a>
+<FONT color="green">1011</FONT>         *<a name="line.1011"></a>
+<FONT color="green">1012</FONT>         * @return the tangent of {@code this}.<a name="line.1012"></a>
+<FONT color="green">1013</FONT>         * @since 1.2<a name="line.1013"></a>
+<FONT color="green">1014</FONT>         */<a name="line.1014"></a>
+<FONT color="green">1015</FONT>        public Complex tan() {<a name="line.1015"></a>
+<FONT color="green">1016</FONT>            if (isNaN || Double.isInfinite(real)) {<a name="line.1016"></a>
+<FONT color="green">1017</FONT>                return NaN;<a name="line.1017"></a>
+<FONT color="green">1018</FONT>            }<a name="line.1018"></a>
+<FONT color="green">1019</FONT>            if (imaginary &gt; 20.0) {<a name="line.1019"></a>
+<FONT color="green">1020</FONT>                return createComplex(0.0, 1.0);<a name="line.1020"></a>
+<FONT color="green">1021</FONT>            }<a name="line.1021"></a>
+<FONT color="green">1022</FONT>            if (imaginary &lt; -20.0) {<a name="line.1022"></a>
+<FONT color="green">1023</FONT>                return createComplex(0.0, -1.0);<a name="line.1023"></a>
+<FONT color="green">1024</FONT>            }<a name="line.1024"></a>
+<FONT color="green">1025</FONT>    <a name="line.1025"></a>
+<FONT color="green">1026</FONT>            double real2 = 2.0 * real;<a name="line.1026"></a>
+<FONT color="green">1027</FONT>            double imaginary2 = 2.0 * imaginary;<a name="line.1027"></a>
+<FONT color="green">1028</FONT>            double d = FastMath.cos(real2) + FastMath.cosh(imaginary2);<a name="line.1028"></a>
+<FONT color="green">1029</FONT>    <a name="line.1029"></a>
+<FONT color="green">1030</FONT>            return createComplex(FastMath.sin(real2) / d,<a name="line.1030"></a>
+<FONT color="green">1031</FONT>                                 FastMath.sinh(imaginary2) / d);<a name="line.1031"></a>
+<FONT color="green">1032</FONT>        }<a name="line.1032"></a>
+<FONT color="green">1033</FONT>    <a name="line.1033"></a>
+<FONT color="green">1034</FONT>        /**<a name="line.1034"></a>
+<FONT color="green">1035</FONT>         * Compute the<a name="line.1035"></a>
+<FONT color="green">1036</FONT>         * &lt;a href="http://mathworld.wolfram.com/HyperbolicTangent.html" TARGET="_top"&gt;<a name="line.1036"></a>
+<FONT color="green">1037</FONT>         * hyperbolic tangent&lt;/a&gt; of this complex number.<a name="line.1037"></a>
+<FONT color="green">1038</FONT>         * Implements the formula:<a name="line.1038"></a>
+<FONT color="green">1039</FONT>         * &lt;pre&gt;<a name="line.1039"></a>
+<FONT color="green">1040</FONT>         *  &lt;code&gt;<a name="line.1040"></a>
+<FONT color="green">1041</FONT>         *   tan(a + bi) = sinh(2a)/(cosh(2a)+cos(2b)) + [sin(2b)/(cosh(2a)+cos(2b))]i<a name="line.1041"></a>
+<FONT color="green">1042</FONT>         *  &lt;/code&gt;<a name="line.1042"></a>
+<FONT color="green">1043</FONT>         * &lt;/pre&gt;<a name="line.1043"></a>
+<FONT color="green">1044</FONT>         * where the (real) functions on the right-hand side are<a name="line.1044"></a>
+<FONT color="green">1045</FONT>         * {@link FastMath#sin}, {@link FastMath#cos}, {@link FastMath#cosh} and<a name="line.1045"></a>
+<FONT color="green">1046</FONT>         * {@link FastMath#sinh}.<a name="line.1046"></a>
+<FONT color="green">1047</FONT>         * &lt;br/&gt;<a name="line.1047"></a>
+<FONT color="green">1048</FONT>         * Returns {@link Complex#NaN} if either real or imaginary part of the<a name="line.1048"></a>
+<FONT color="green">1049</FONT>         * input argument is {@code NaN}.<a name="line.1049"></a>
+<FONT color="green">1050</FONT>         * &lt;br/&gt;<a name="line.1050"></a>
+<FONT color="green">1051</FONT>         * Infinite values in real or imaginary parts of the input may result in<a name="line.1051"></a>
+<FONT color="green">1052</FONT>         * infinite or NaN values returned in parts of the result.<a name="line.1052"></a>
+<FONT color="green">1053</FONT>         * &lt;pre&gt;<a name="line.1053"></a>
+<FONT color="green">1054</FONT>         *  Examples:<a name="line.1054"></a>
+<FONT color="green">1055</FONT>         *  &lt;code&gt;<a name="line.1055"></a>
+<FONT color="green">1056</FONT>         *   tanh(a &amp;plusmn; INFINITY i) = NaN + NaN i<a name="line.1056"></a>
+<FONT color="green">1057</FONT>         *   tanh(&amp;plusmn;INFINITY + bi) = &amp;plusmn;1 + 0 i<a name="line.1057"></a>
+<FONT color="green">1058</FONT>         *   tanh(&amp;plusmn;INFINITY &amp;plusmn; INFINITY i) = NaN + NaN i<a name="line.1058"></a>
+<FONT color="green">1059</FONT>         *   tanh(0 + (&amp;pi;/2)i) = NaN + INFINITY i<a name="line.1059"></a>
+<FONT color="green">1060</FONT>         *  &lt;/code&gt;<a name="line.1060"></a>
+<FONT color="green">1061</FONT>         * &lt;/pre&gt;<a name="line.1061"></a>
+<FONT color="green">1062</FONT>         *<a name="line.1062"></a>
+<FONT color="green">1063</FONT>         * @return the hyperbolic tangent of {@code this}.<a name="line.1063"></a>
+<FONT color="green">1064</FONT>         * @since 1.2<a name="line.1064"></a>
+<FONT color="green">1065</FONT>         */<a name="line.1065"></a>
+<FONT color="green">1066</FONT>        public Complex tanh() {<a name="line.1066"></a>
+<FONT color="green">1067</FONT>            if (isNaN || Double.isInfinite(imaginary)) {<a name="line.1067"></a>
+<FONT color="green">1068</FONT>                return NaN;<a name="line.1068"></a>
+<FONT color="green">1069</FONT>            }<a name="line.1069"></a>
+<FONT color="green">1070</FONT>            if (real &gt; 20.0) {<a name="line.1070"></a>
+<FONT color="green">1071</FONT>                return createComplex(1.0, 0.0);<a name="line.1071"></a>
+<FONT color="green">1072</FONT>            }<a name="line.1072"></a>
+<FONT color="green">1073</FONT>            if (real &lt; -20.0) {<a name="line.1073"></a>
+<FONT color="green">1074</FONT>                return createComplex(-1.0, 0.0);<a name="line.1074"></a>
+<FONT color="green">1075</FONT>            }<a name="line.1075"></a>
+<FONT color="green">1076</FONT>            double real2 = 2.0 * real;<a name="line.1076"></a>
+<FONT color="green">1077</FONT>            double imaginary2 = 2.0 * imaginary;<a name="line.1077"></a>
+<FONT color="green">1078</FONT>            double d = FastMath.cosh(real2) + FastMath.cos(imaginary2);<a name="line.1078"></a>
+<FONT color="green">1079</FONT>    <a name="line.1079"></a>
+<FONT color="green">1080</FONT>            return createComplex(FastMath.sinh(real2) / d,<a name="line.1080"></a>
+<FONT color="green">1081</FONT>                                 FastMath.sin(imaginary2) / d);<a name="line.1081"></a>
+<FONT color="green">1082</FONT>        }<a name="line.1082"></a>
+<FONT color="green">1083</FONT>    <a name="line.1083"></a>
+<FONT color="green">1084</FONT>    <a name="line.1084"></a>
+<FONT color="green">1085</FONT>    <a name="line.1085"></a>
+<FONT color="green">1086</FONT>        /**<a name="line.1086"></a>
+<FONT color="green">1087</FONT>         * Compute the argument of this complex number.<a name="line.1087"></a>
+<FONT color="green">1088</FONT>         * The argument is the angle phi between the positive real axis and<a name="line.1088"></a>
+<FONT color="green">1089</FONT>         * the point representing this number in the complex plane.<a name="line.1089"></a>
+<FONT color="green">1090</FONT>         * The value returned is between -PI (not inclusive)<a name="line.1090"></a>
+<FONT color="green">1091</FONT>         * and PI (inclusive), with negative values returned for numbers with<a name="line.1091"></a>
+<FONT color="green">1092</FONT>         * negative imaginary parts.<a name="line.1092"></a>
+<FONT color="green">1093</FONT>         * &lt;br/&gt;<a name="line.1093"></a>
+<FONT color="green">1094</FONT>         * If either real or imaginary part (or both) is NaN, NaN is returned.<a name="line.1094"></a>
+<FONT color="green">1095</FONT>         * Infinite parts are handled as {@code Math.atan2} handles them,<a name="line.1095"></a>
+<FONT color="green">1096</FONT>         * essentially treating finite parts as zero in the presence of an<a name="line.1096"></a>
+<FONT color="green">1097</FONT>         * infinite coordinate and returning a multiple of pi/4 depending on<a name="line.1097"></a>
+<FONT color="green">1098</FONT>         * the signs of the infinite parts.<a name="line.1098"></a>
+<FONT color="green">1099</FONT>         * See the javadoc for {@code Math.atan2} for full details.<a name="line.1099"></a>
+<FONT color="green">1100</FONT>         *<a name="line.1100"></a>
+<FONT color="green">1101</FONT>         * @return the argument of {@code this}.<a name="line.1101"></a>
+<FONT color="green">1102</FONT>         */<a name="line.1102"></a>
+<FONT color="green">1103</FONT>        public double getArgument() {<a name="line.1103"></a>
+<FONT color="green">1104</FONT>            return FastMath.atan2(getImaginary(), getReal());<a name="line.1104"></a>
+<FONT color="green">1105</FONT>        }<a name="line.1105"></a>
+<FONT color="green">1106</FONT>    <a name="line.1106"></a>
+<FONT color="green">1107</FONT>        /**<a name="line.1107"></a>
+<FONT color="green">1108</FONT>         * Computes the n-th roots of this complex number.<a name="line.1108"></a>
+<FONT color="green">1109</FONT>         * The nth roots are defined by the formula:<a name="line.1109"></a>
+<FONT color="green">1110</FONT>         * &lt;pre&gt;<a name="line.1110"></a>
+<FONT color="green">1111</FONT>         *  &lt;code&gt;<a name="line.1111"></a>
+<FONT color="green">1112</FONT>         *   z&lt;sub&gt;k&lt;/sub&gt; = abs&lt;sup&gt;1/n&lt;/sup&gt; (cos(phi + 2&amp;pi;k/n) + i (sin(phi + 2&amp;pi;k/n))<a name="line.1112"></a>
+<FONT color="green">1113</FONT>         *  &lt;/code&gt;<a name="line.1113"></a>
+<FONT color="green">1114</FONT>         * &lt;/pre&gt;<a name="line.1114"></a>
+<FONT color="green">1115</FONT>         * for &lt;i&gt;{@code k=0, 1, ..., n-1}&lt;/i&gt;, where {@code abs} and {@code phi}<a name="line.1115"></a>
+<FONT color="green">1116</FONT>         * are respectively the {@link #abs() modulus} and<a name="line.1116"></a>
+<FONT color="green">1117</FONT>         * {@link #getArgument() argument} of this complex number.<a name="line.1117"></a>
+<FONT color="green">1118</FONT>         * &lt;br/&gt;<a name="line.1118"></a>
+<FONT color="green">1119</FONT>         * If one or both parts of this complex number is NaN, a list with just<a name="line.1119"></a>
+<FONT color="green">1120</FONT>         * one element, {@link #NaN} is returned.<a name="line.1120"></a>
+<FONT color="green">1121</FONT>         * if neither part is NaN, but at least one part is infinite, the result<a name="line.1121"></a>
+<FONT color="green">1122</FONT>         * is a one-element list containing {@link #INF}.<a name="line.1122"></a>
+<FONT color="green">1123</FONT>         *<a name="line.1123"></a>
+<FONT color="green">1124</FONT>         * @param n Degree of root.<a name="line.1124"></a>
+<FONT color="green">1125</FONT>         * @return a List&lt;Complex&gt; of all {@code n}-th roots of {@code this}.<a name="line.1125"></a>
+<FONT color="green">1126</FONT>         * @throws NotPositiveException if {@code n &lt;= 0}.<a name="line.1126"></a>
+<FONT color="green">1127</FONT>         * @since 2.0<a name="line.1127"></a>
+<FONT color="green">1128</FONT>         */<a name="line.1128"></a>
+<FONT color="green">1129</FONT>        public List&lt;Complex&gt; nthRoot(int n) throws NotPositiveException {<a name="line.1129"></a>
+<FONT color="green">1130</FONT>    <a name="line.1130"></a>
+<FONT color="green">1131</FONT>            if (n &lt;= 0) {<a name="line.1131"></a>
+<FONT color="green">1132</FONT>                throw new NotPositiveException(LocalizedFormats.CANNOT_COMPUTE_NTH_ROOT_FOR_NEGATIVE_N,<a name="line.1132"></a>
+<FONT color="green">1133</FONT>                                               n);<a name="line.1133"></a>
+<FONT color="green">1134</FONT>            }<a name="line.1134"></a>
+<FONT color="green">1135</FONT>    <a name="line.1135"></a>
+<FONT color="green">1136</FONT>            final List&lt;Complex&gt; result = new ArrayList&lt;Complex&gt;();<a name="line.1136"></a>
+<FONT color="green">1137</FONT>    <a name="line.1137"></a>
+<FONT color="green">1138</FONT>            if (isNaN) {<a name="line.1138"></a>
+<FONT color="green">1139</FONT>                result.add(NaN);<a name="line.1139"></a>
+<FONT color="green">1140</FONT>                return result;<a name="line.1140"></a>
+<FONT color="green">1141</FONT>            }<a name="line.1141"></a>
+<FONT color="green">1142</FONT>            if (isInfinite()) {<a name="line.1142"></a>
+<FONT color="green">1143</FONT>                result.add(INF);<a name="line.1143"></a>
+<FONT color="green">1144</FONT>                return result;<a name="line.1144"></a>
+<FONT color="green">1145</FONT>            }<a name="line.1145"></a>
+<FONT color="green">1146</FONT>    <a name="line.1146"></a>
+<FONT color="green">1147</FONT>            // nth root of abs -- faster / more accurate to use a solver here?<a name="line.1147"></a>
+<FONT color="green">1148</FONT>            final double nthRootOfAbs = FastMath.pow(abs(), 1.0 / n);<a name="line.1148"></a>
+<FONT color="green">1149</FONT>    <a name="line.1149"></a>
+<FONT color="green">1150</FONT>            // Compute nth roots of complex number with k = 0, 1, ... n-1<a name="line.1150"></a>
+<FONT color="green">1151</FONT>            final double nthPhi = getArgument() / n;<a name="line.1151"></a>
+<FONT color="green">1152</FONT>            final double slice = 2 * FastMath.PI / n;<a name="line.1152"></a>
+<FONT color="green">1153</FONT>            double innerPart = nthPhi;<a name="line.1153"></a>
+<FONT color="green">1154</FONT>            for (int k = 0; k &lt; n ; k++) {<a name="line.1154"></a>
+<FONT color="green">1155</FONT>                // inner part<a name="line.1155"></a>
+<FONT color="green">1156</FONT>                final double realPart = nthRootOfAbs *  FastMath.cos(innerPart);<a name="line.1156"></a>
+<FONT color="green">1157</FONT>                final double imaginaryPart = nthRootOfAbs *  FastMath.sin(innerPart);<a name="line.1157"></a>
+<FONT color="green">1158</FONT>                result.add(createComplex(realPart, imaginaryPart));<a name="line.1158"></a>
+<FONT color="green">1159</FONT>                innerPart += slice;<a name="line.1159"></a>
+<FONT color="green">1160</FONT>            }<a name="line.1160"></a>
+<FONT color="green">1161</FONT>    <a name="line.1161"></a>
+<FONT color="green">1162</FONT>            return result;<a name="line.1162"></a>
+<FONT color="green">1163</FONT>        }<a name="line.1163"></a>
+<FONT color="green">1164</FONT>    <a name="line.1164"></a>
+<FONT color="green">1165</FONT>        /**<a name="line.1165"></a>
+<FONT color="green">1166</FONT>         * Create a complex number given the real and imaginary parts.<a name="line.1166"></a>
+<FONT color="green">1167</FONT>         *<a name="line.1167"></a>
+<FONT color="green">1168</FONT>         * @param realPart Real part.<a name="line.1168"></a>
+<FONT color="green">1169</FONT>         * @param imaginaryPart Imaginary part.<a name="line.1169"></a>
+<FONT color="green">1170</FONT>         * @return a new complex number instance.<a name="line.1170"></a>
+<FONT color="green">1171</FONT>         * @since 1.2<a name="line.1171"></a>
+<FONT color="green">1172</FONT>         * @see #valueOf(double, double)<a name="line.1172"></a>
+<FONT color="green">1173</FONT>         */<a name="line.1173"></a>
+<FONT color="green">1174</FONT>        protected Complex createComplex(double realPart,<a name="line.1174"></a>
+<FONT color="green">1175</FONT>                                        double imaginaryPart) {<a name="line.1175"></a>
+<FONT color="green">1176</FONT>            return new Complex(realPart, imaginaryPart);<a name="line.1176"></a>
+<FONT color="green">1177</FONT>        }<a name="line.1177"></a>
+<FONT color="green">1178</FONT>    <a name="line.1178"></a>
+<FONT color="green">1179</FONT>        /**<a name="line.1179"></a>
+<FONT color="green">1180</FONT>         * Create a complex number given the real and imaginary parts.<a name="line.1180"></a>
+<FONT color="green">1181</FONT>         *<a name="line.1181"></a>
+<FONT color="green">1182</FONT>         * @param realPart Real part.<a name="line.1182"></a>
+<FONT color="green">1183</FONT>         * @param imaginaryPart Imaginary part.<a name="line.1183"></a>
+<FONT color="green">1184</FONT>         * @return a Complex instance.<a name="line.1184"></a>
+<FONT color="green">1185</FONT>         */<a name="line.1185"></a>
+<FONT color="green">1186</FONT>        public static Complex valueOf(double realPart,<a name="line.1186"></a>
+<FONT color="green">1187</FONT>                                      double imaginaryPart) {<a name="line.1187"></a>
+<FONT color="green">1188</FONT>            if (Double.isNaN(realPart) ||<a name="line.1188"></a>
+<FONT color="green">1189</FONT>                Double.isNaN(imaginaryPart)) {<a name="line.1189"></a>
+<FONT color="green">1190</FONT>                return NaN;<a name="line.1190"></a>
+<FONT color="green">1191</FONT>            }<a name="line.1191"></a>
+<FONT color="green">1192</FONT>            return new Complex(realPart, imaginaryPart);<a name="line.1192"></a>
+<FONT color="green">1193</FONT>        }<a name="line.1193"></a>
+<FONT color="green">1194</FONT>    <a name="line.1194"></a>
+<FONT color="green">1195</FONT>        /**<a name="line.1195"></a>
+<FONT color="green">1196</FONT>         * Create a complex number given only the real part.<a name="line.1196"></a>
+<FONT color="green">1197</FONT>         *<a name="line.1197"></a>
+<FONT color="green">1198</FONT>         * @param realPart Real part.<a name="line.1198"></a>
+<FONT color="green">1199</FONT>         * @return a Complex instance.<a name="line.1199"></a>
+<FONT color="green">1200</FONT>         */<a name="line.1200"></a>
+<FONT color="green">1201</FONT>        public static Complex valueOf(double realPart) {<a name="line.1201"></a>
+<FONT color="green">1202</FONT>            if (Double.isNaN(realPart)) {<a name="line.1202"></a>
+<FONT color="green">1203</FONT>                return NaN;<a name="line.1203"></a>
+<FONT color="green">1204</FONT>            }<a name="line.1204"></a>
+<FONT color="green">1205</FONT>            return new Complex(realPart);<a name="line.1205"></a>
+<FONT color="green">1206</FONT>        }<a name="line.1206"></a>
+<FONT color="green">1207</FONT>    <a name="line.1207"></a>
+<FONT color="green">1208</FONT>        /**<a name="line.1208"></a>
+<FONT color="green">1209</FONT>         * Resolve the transient fields in a deserialized Complex Object.<a name="line.1209"></a>
+<FONT color="green">1210</FONT>         * Subclasses will need to override {@link #createComplex} to<a name="line.1210"></a>
+<FONT color="green">1211</FONT>         * deserialize properly.<a name="line.1211"></a>
+<FONT color="green">1212</FONT>         *<a name="line.1212"></a>
+<FONT color="green">1213</FONT>         * @return A Complex instance with all fields resolved.<a name="line.1213"></a>
+<FONT color="green">1214</FONT>         * @since 2.0<a name="line.1214"></a>
+<FONT color="green">1215</FONT>         */<a name="line.1215"></a>
+<FONT color="green">1216</FONT>        protected final Object readResolve() {<a name="line.1216"></a>
+<FONT color="green">1217</FONT>            return createComplex(real, imaginary);<a name="line.1217"></a>
+<FONT color="green">1218</FONT>        }<a name="line.1218"></a>
+<FONT color="green">1219</FONT>    <a name="line.1219"></a>
+<FONT color="green">1220</FONT>        /** {@inheritDoc} */<a name="line.1220"></a>
+<FONT color="green">1221</FONT>        public ComplexField getField() {<a name="line.1221"></a>
+<FONT color="green">1222</FONT>            return ComplexField.getInstance();<a name="line.1222"></a>
+<FONT color="green">1223</FONT>        }<a name="line.1223"></a>
+<FONT color="green">1224</FONT>    <a name="line.1224"></a>
+<FONT color="green">1225</FONT>        /** {@inheritDoc} */<a name="line.1225"></a>
+<FONT color="green">1226</FONT>        @Override<a name="line.1226"></a>
+<FONT color="green">1227</FONT>        public String toString() {<a name="line.1227"></a>
+<FONT color="green">1228</FONT>            return "(" + real + ", " + imaginary + ")";<a name="line.1228"></a>
+<FONT color="green">1229</FONT>        }<a name="line.1229"></a>
+<FONT color="green">1230</FONT>    <a name="line.1230"></a>
+<FONT color="green">1231</FONT>    }<a name="line.1231"></a>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</PRE>
+</BODY>
+</HTML>

@@ -1,0 +1,961 @@
+<HTML>
+<BODY BGCOLOR="white">
+<PRE>
+<FONT color="green">001</FONT>    /*<a name="line.1"></a>
+<FONT color="green">002</FONT>     * Licensed to the Apache Software Foundation (ASF) under one or more<a name="line.2"></a>
+<FONT color="green">003</FONT>     * contributor license agreements.  See the NOTICE file distributed with<a name="line.3"></a>
+<FONT color="green">004</FONT>     * this work for additional information regarding copyright ownership.<a name="line.4"></a>
+<FONT color="green">005</FONT>     * The ASF licenses this file to You under the Apache License, Version 2.0<a name="line.5"></a>
+<FONT color="green">006</FONT>     * (the "License"); you may not use this file except in compliance with<a name="line.6"></a>
+<FONT color="green">007</FONT>     * the License.  You may obtain a copy of the License at<a name="line.7"></a>
+<FONT color="green">008</FONT>     *<a name="line.8"></a>
+<FONT color="green">009</FONT>     *      http://www.apache.org/licenses/LICENSE-2.0<a name="line.9"></a>
+<FONT color="green">010</FONT>     *<a name="line.10"></a>
+<FONT color="green">011</FONT>     * Unless required by applicable law or agreed to in writing, software<a name="line.11"></a>
+<FONT color="green">012</FONT>     * distributed under the License is distributed on an "AS IS" BASIS,<a name="line.12"></a>
+<FONT color="green">013</FONT>     * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.<a name="line.13"></a>
+<FONT color="green">014</FONT>     * See the License for the specific language governing permissions and<a name="line.14"></a>
+<FONT color="green">015</FONT>     * limitations under the License.<a name="line.15"></a>
+<FONT color="green">016</FONT>     */<a name="line.16"></a>
+<FONT color="green">017</FONT>    package org.apache.commons.math3.analysis.differentiation;<a name="line.17"></a>
+<FONT color="green">018</FONT>    <a name="line.18"></a>
+<FONT color="green">019</FONT>    import java.io.Serializable;<a name="line.19"></a>
+<FONT color="green">020</FONT>    <a name="line.20"></a>
+<FONT color="green">021</FONT>    import org.apache.commons.math3.Field;<a name="line.21"></a>
+<FONT color="green">022</FONT>    import org.apache.commons.math3.FieldElement;<a name="line.22"></a>
+<FONT color="green">023</FONT>    import org.apache.commons.math3.exception.DimensionMismatchException;<a name="line.23"></a>
+<FONT color="green">024</FONT>    import org.apache.commons.math3.exception.NumberIsTooLargeException;<a name="line.24"></a>
+<FONT color="green">025</FONT>    import org.apache.commons.math3.util.FastMath;<a name="line.25"></a>
+<FONT color="green">026</FONT>    <a name="line.26"></a>
+<FONT color="green">027</FONT>    /** Class representing both the value and the differentials of a function.<a name="line.27"></a>
+<FONT color="green">028</FONT>     * &lt;p&gt;This class is the workhorse of the differentiation package.&lt;/p&gt;<a name="line.28"></a>
+<FONT color="green">029</FONT>     * &lt;p&gt;This class is an implementation of the extension to Rall's<a name="line.29"></a>
+<FONT color="green">030</FONT>     * numbers described in Dan Kalman's paper &lt;a<a name="line.30"></a>
+<FONT color="green">031</FONT>     * href="http://www.math.american.edu/People/kalman/pdffiles/mmgautodiff.pdf"&gt;Doubly<a name="line.31"></a>
+<FONT color="green">032</FONT>     * Recursive Multivariate Automatic Differentiation&lt;/a&gt;, Mathematics Magazine, vol. 75,<a name="line.32"></a>
+<FONT color="green">033</FONT>     * no. 3, June 2002.&lt;/p&gt;. Rall's numbers are an extension to the real numbers used<a name="line.33"></a>
+<FONT color="green">034</FONT>     * throughout mathematical expressions; they hold the derivative together with the<a name="line.34"></a>
+<FONT color="green">035</FONT>     * value of a function. Dan Kalman's derivative structures hold all partial derivatives<a name="line.35"></a>
+<FONT color="green">036</FONT>     * up to any specified order, with respect to any number of free parameters. Rall's<a name="line.36"></a>
+<FONT color="green">037</FONT>     * numbers therefore can be seen as derivative structures for order one derivative and<a name="line.37"></a>
+<FONT color="green">038</FONT>     * one free parameter, and real numbers can be seen as derivative structures with zero<a name="line.38"></a>
+<FONT color="green">039</FONT>     * order derivative and no free parameters.&lt;/p&gt;<a name="line.39"></a>
+<FONT color="green">040</FONT>     * &lt;p&gt;{@link DerivativeStructure} instances can be used directly thanks to<a name="line.40"></a>
+<FONT color="green">041</FONT>     * the arithmetic operators to the mathematical functions provided as static<a name="line.41"></a>
+<FONT color="green">042</FONT>     * methods by this class (+, -, *, /, %, sin, cos ...).&lt;/p&gt;<a name="line.42"></a>
+<FONT color="green">043</FONT>     * &lt;p&gt;Implementing complex expressions by hand using these classes is<a name="line.43"></a>
+<FONT color="green">044</FONT>     * a tedious and error-prone task but has the advantage of having no limitation<a name="line.44"></a>
+<FONT color="green">045</FONT>     * on the derivation order despite no requiring users to compute the derivatives by<a name="line.45"></a>
+<FONT color="green">046</FONT>     * themselves. Implementing complex expression can also be done by developing computation<a name="line.46"></a>
+<FONT color="green">047</FONT>     * code using standard primitive double values and to use {@link<a name="line.47"></a>
+<FONT color="green">048</FONT>     * UnivariateFunctionDifferentiator differentiators} to create the {@link<a name="line.48"></a>
+<FONT color="green">049</FONT>     * DerivativeStructure}-based instances. This method is simpler but may be limited in<a name="line.49"></a>
+<FONT color="green">050</FONT>     * the accuracy and derivation orders and may be computationally intensive (this is<a name="line.50"></a>
+<FONT color="green">051</FONT>     * typically the case for {@link FiniteDifferencesDifferentiator finite differences<a name="line.51"></a>
+<FONT color="green">052</FONT>     * differentiator}.&lt;/p&gt;<a name="line.52"></a>
+<FONT color="green">053</FONT>     * &lt;p&gt;Instances of this class are guaranteed to be immutable.&lt;/p&gt;<a name="line.53"></a>
+<FONT color="green">054</FONT>     * @see DSCompiler<a name="line.54"></a>
+<FONT color="green">055</FONT>     * @version $Id: DerivativeStructure.java 1416643 2012-12-03 19:37:14Z tn $<a name="line.55"></a>
+<FONT color="green">056</FONT>     * @since 3.1<a name="line.56"></a>
+<FONT color="green">057</FONT>     */<a name="line.57"></a>
+<FONT color="green">058</FONT>    public class DerivativeStructure implements FieldElement&lt;DerivativeStructure&gt;, Serializable {<a name="line.58"></a>
+<FONT color="green">059</FONT>    <a name="line.59"></a>
+<FONT color="green">060</FONT>        /** Serializable UID. */<a name="line.60"></a>
+<FONT color="green">061</FONT>        private static final long serialVersionUID = 20120730L;<a name="line.61"></a>
+<FONT color="green">062</FONT>    <a name="line.62"></a>
+<FONT color="green">063</FONT>        /** Compiler for the current dimensions. */<a name="line.63"></a>
+<FONT color="green">064</FONT>        private transient DSCompiler compiler;<a name="line.64"></a>
+<FONT color="green">065</FONT>    <a name="line.65"></a>
+<FONT color="green">066</FONT>        /** Combined array holding all values. */<a name="line.66"></a>
+<FONT color="green">067</FONT>        private final double[] data;<a name="line.67"></a>
+<FONT color="green">068</FONT>    <a name="line.68"></a>
+<FONT color="green">069</FONT>        /** Build an instance with all values and derivatives set to 0.<a name="line.69"></a>
+<FONT color="green">070</FONT>         * @param compiler compiler to use for computation<a name="line.70"></a>
+<FONT color="green">071</FONT>         */<a name="line.71"></a>
+<FONT color="green">072</FONT>        private DerivativeStructure(final DSCompiler compiler) {<a name="line.72"></a>
+<FONT color="green">073</FONT>            this.compiler = compiler;<a name="line.73"></a>
+<FONT color="green">074</FONT>            this.data     = new double[compiler.getSize()];<a name="line.74"></a>
+<FONT color="green">075</FONT>        }<a name="line.75"></a>
+<FONT color="green">076</FONT>    <a name="line.76"></a>
+<FONT color="green">077</FONT>        /** Build an instance with all values and derivatives set to 0.<a name="line.77"></a>
+<FONT color="green">078</FONT>         * @param parameters number of free parameters<a name="line.78"></a>
+<FONT color="green">079</FONT>         * @param order derivation order<a name="line.79"></a>
+<FONT color="green">080</FONT>         */<a name="line.80"></a>
+<FONT color="green">081</FONT>        public DerivativeStructure(final int parameters, final int order) {<a name="line.81"></a>
+<FONT color="green">082</FONT>            this(DSCompiler.getCompiler(parameters, order));<a name="line.82"></a>
+<FONT color="green">083</FONT>        }<a name="line.83"></a>
+<FONT color="green">084</FONT>    <a name="line.84"></a>
+<FONT color="green">085</FONT>        /** Build an instance representing a constant value.<a name="line.85"></a>
+<FONT color="green">086</FONT>         * @param parameters number of free parameters<a name="line.86"></a>
+<FONT color="green">087</FONT>         * @param order derivation order<a name="line.87"></a>
+<FONT color="green">088</FONT>         * @param value value of the constant<a name="line.88"></a>
+<FONT color="green">089</FONT>         * @see #DerivativeStructure(int, int, int, double)<a name="line.89"></a>
+<FONT color="green">090</FONT>         */<a name="line.90"></a>
+<FONT color="green">091</FONT>        public DerivativeStructure(final int parameters, final int order, final double value) {<a name="line.91"></a>
+<FONT color="green">092</FONT>            this(parameters, order);<a name="line.92"></a>
+<FONT color="green">093</FONT>            this.data[0] = value;<a name="line.93"></a>
+<FONT color="green">094</FONT>        }<a name="line.94"></a>
+<FONT color="green">095</FONT>    <a name="line.95"></a>
+<FONT color="green">096</FONT>        /** Build an instance representing a variable.<a name="line.96"></a>
+<FONT color="green">097</FONT>         * &lt;p&gt;Instances built using this constructor are considered<a name="line.97"></a>
+<FONT color="green">098</FONT>         * to be the free variables with respect to which differentials<a name="line.98"></a>
+<FONT color="green">099</FONT>         * are computed. As such, their differential with respect to<a name="line.99"></a>
+<FONT color="green">100</FONT>         * themselves is +1.&lt;/p&gt;<a name="line.100"></a>
+<FONT color="green">101</FONT>         * @param parameters number of free parameters<a name="line.101"></a>
+<FONT color="green">102</FONT>         * @param order derivation order<a name="line.102"></a>
+<FONT color="green">103</FONT>         * @param index index of the variable (from 0 to {@code parameters - 1})<a name="line.103"></a>
+<FONT color="green">104</FONT>         * @param value value of the variable<a name="line.104"></a>
+<FONT color="green">105</FONT>         * @exception NumberIsTooLargeException if {@code index &gt;= parameters}.<a name="line.105"></a>
+<FONT color="green">106</FONT>         * @see #DerivativeStructure(int, int, double)<a name="line.106"></a>
+<FONT color="green">107</FONT>         */<a name="line.107"></a>
+<FONT color="green">108</FONT>        public DerivativeStructure(final int parameters, final int order,<a name="line.108"></a>
+<FONT color="green">109</FONT>                                   final int index, final double value)<a name="line.109"></a>
+<FONT color="green">110</FONT>            throws NumberIsTooLargeException {<a name="line.110"></a>
+<FONT color="green">111</FONT>            this(parameters, order, value);<a name="line.111"></a>
+<FONT color="green">112</FONT>    <a name="line.112"></a>
+<FONT color="green">113</FONT>            if (index &gt;= parameters) {<a name="line.113"></a>
+<FONT color="green">114</FONT>                throw new NumberIsTooLargeException(index, parameters, false);<a name="line.114"></a>
+<FONT color="green">115</FONT>            }<a name="line.115"></a>
+<FONT color="green">116</FONT>    <a name="line.116"></a>
+<FONT color="green">117</FONT>            if (order &gt; 0) {<a name="line.117"></a>
+<FONT color="green">118</FONT>                // the derivative of the variable with respect to itself is 1.<a name="line.118"></a>
+<FONT color="green">119</FONT>                data[DSCompiler.getCompiler(index, order).getSize()] = 1.0;<a name="line.119"></a>
+<FONT color="green">120</FONT>            }<a name="line.120"></a>
+<FONT color="green">121</FONT>    <a name="line.121"></a>
+<FONT color="green">122</FONT>        }<a name="line.122"></a>
+<FONT color="green">123</FONT>    <a name="line.123"></a>
+<FONT color="green">124</FONT>        /** Linear combination constructor.<a name="line.124"></a>
+<FONT color="green">125</FONT>         * The derivative structure built will be a1 * ds1 + a2 * ds2<a name="line.125"></a>
+<FONT color="green">126</FONT>         * @param a1 first scale factor<a name="line.126"></a>
+<FONT color="green">127</FONT>         * @param ds1 first base (unscaled) derivative structure<a name="line.127"></a>
+<FONT color="green">128</FONT>         * @param a2 second scale factor<a name="line.128"></a>
+<FONT color="green">129</FONT>         * @param ds2 second base (unscaled) derivative structure<a name="line.129"></a>
+<FONT color="green">130</FONT>         * @exception DimensionMismatchException if number of free parameters or orders are inconsistent<a name="line.130"></a>
+<FONT color="green">131</FONT>         */<a name="line.131"></a>
+<FONT color="green">132</FONT>        public DerivativeStructure(final double a1, final DerivativeStructure ds1,<a name="line.132"></a>
+<FONT color="green">133</FONT>                                   final double a2, final DerivativeStructure ds2)<a name="line.133"></a>
+<FONT color="green">134</FONT>            throws DimensionMismatchException {<a name="line.134"></a>
+<FONT color="green">135</FONT>            this(ds1.compiler);<a name="line.135"></a>
+<FONT color="green">136</FONT>            compiler.checkCompatibility(ds2.compiler);<a name="line.136"></a>
+<FONT color="green">137</FONT>            compiler.linearCombination(a1, ds1.data, 0, a2, ds2.data, 0, data, 0);<a name="line.137"></a>
+<FONT color="green">138</FONT>        }<a name="line.138"></a>
+<FONT color="green">139</FONT>    <a name="line.139"></a>
+<FONT color="green">140</FONT>        /** Linear combination constructor.<a name="line.140"></a>
+<FONT color="green">141</FONT>         * The derivative structure built will be a1 * ds1 + a2 * ds2 + a3 * ds3<a name="line.141"></a>
+<FONT color="green">142</FONT>         * @param a1 first scale factor<a name="line.142"></a>
+<FONT color="green">143</FONT>         * @param ds1 first base (unscaled) derivative structure<a name="line.143"></a>
+<FONT color="green">144</FONT>         * @param a2 second scale factor<a name="line.144"></a>
+<FONT color="green">145</FONT>         * @param ds2 second base (unscaled) derivative structure<a name="line.145"></a>
+<FONT color="green">146</FONT>         * @param a3 third scale factor<a name="line.146"></a>
+<FONT color="green">147</FONT>         * @param ds3 third base (unscaled) derivative structure<a name="line.147"></a>
+<FONT color="green">148</FONT>         * @exception DimensionMismatchException if number of free parameters or orders are inconsistent<a name="line.148"></a>
+<FONT color="green">149</FONT>         */<a name="line.149"></a>
+<FONT color="green">150</FONT>        public DerivativeStructure(final double a1, final DerivativeStructure ds1,<a name="line.150"></a>
+<FONT color="green">151</FONT>                                   final double a2, final DerivativeStructure ds2,<a name="line.151"></a>
+<FONT color="green">152</FONT>                                   final double a3, final DerivativeStructure ds3)<a name="line.152"></a>
+<FONT color="green">153</FONT>            throws DimensionMismatchException {<a name="line.153"></a>
+<FONT color="green">154</FONT>            this(ds1.compiler);<a name="line.154"></a>
+<FONT color="green">155</FONT>            compiler.checkCompatibility(ds2.compiler);<a name="line.155"></a>
+<FONT color="green">156</FONT>            compiler.checkCompatibility(ds3.compiler);<a name="line.156"></a>
+<FONT color="green">157</FONT>            compiler.linearCombination(a1, ds1.data, 0, a2, ds2.data, 0, a3, ds3.data, 0, data, 0);<a name="line.157"></a>
+<FONT color="green">158</FONT>        }<a name="line.158"></a>
+<FONT color="green">159</FONT>    <a name="line.159"></a>
+<FONT color="green">160</FONT>        /** Linear combination constructor.<a name="line.160"></a>
+<FONT color="green">161</FONT>         * The derivative structure built will be a1 * ds1 + a2 * ds2 + a3 * ds3 + a4 * ds4<a name="line.161"></a>
+<FONT color="green">162</FONT>         * @param a1 first scale factor<a name="line.162"></a>
+<FONT color="green">163</FONT>         * @param ds1 first base (unscaled) derivative structure<a name="line.163"></a>
+<FONT color="green">164</FONT>         * @param a2 second scale factor<a name="line.164"></a>
+<FONT color="green">165</FONT>         * @param ds2 second base (unscaled) derivative structure<a name="line.165"></a>
+<FONT color="green">166</FONT>         * @param a3 third scale factor<a name="line.166"></a>
+<FONT color="green">167</FONT>         * @param ds3 third base (unscaled) derivative structure<a name="line.167"></a>
+<FONT color="green">168</FONT>         * @param a4 fourth scale factor<a name="line.168"></a>
+<FONT color="green">169</FONT>         * @param ds4 fourth base (unscaled) derivative structure<a name="line.169"></a>
+<FONT color="green">170</FONT>         * @exception DimensionMismatchException if number of free parameters or orders are inconsistent<a name="line.170"></a>
+<FONT color="green">171</FONT>         */<a name="line.171"></a>
+<FONT color="green">172</FONT>        public DerivativeStructure(final double a1, final DerivativeStructure ds1,<a name="line.172"></a>
+<FONT color="green">173</FONT>                                   final double a2, final DerivativeStructure ds2,<a name="line.173"></a>
+<FONT color="green">174</FONT>                                   final double a3, final DerivativeStructure ds3,<a name="line.174"></a>
+<FONT color="green">175</FONT>                                   final double a4, final DerivativeStructure ds4)<a name="line.175"></a>
+<FONT color="green">176</FONT>            throws DimensionMismatchException {<a name="line.176"></a>
+<FONT color="green">177</FONT>            this(ds1.compiler);<a name="line.177"></a>
+<FONT color="green">178</FONT>            compiler.checkCompatibility(ds2.compiler);<a name="line.178"></a>
+<FONT color="green">179</FONT>            compiler.checkCompatibility(ds3.compiler);<a name="line.179"></a>
+<FONT color="green">180</FONT>            compiler.checkCompatibility(ds4.compiler);<a name="line.180"></a>
+<FONT color="green">181</FONT>            compiler.linearCombination(a1, ds1.data, 0, a2, ds2.data, 0,<a name="line.181"></a>
+<FONT color="green">182</FONT>                                       a3, ds3.data, 0, a4, ds4.data, 0,<a name="line.182"></a>
+<FONT color="green">183</FONT>                                       data, 0);<a name="line.183"></a>
+<FONT color="green">184</FONT>        }<a name="line.184"></a>
+<FONT color="green">185</FONT>    <a name="line.185"></a>
+<FONT color="green">186</FONT>        /** Build an instance from all its derivatives.<a name="line.186"></a>
+<FONT color="green">187</FONT>         * @param parameters number of free parameters<a name="line.187"></a>
+<FONT color="green">188</FONT>         * @param order derivation order<a name="line.188"></a>
+<FONT color="green">189</FONT>         * @param derivatives derivatives sorted according to<a name="line.189"></a>
+<FONT color="green">190</FONT>         * {@link DSCompiler#getPartialDerivativeIndex(int...)}<a name="line.190"></a>
+<FONT color="green">191</FONT>         * @exception DimensionMismatchException if derivatives array does not match the<a name="line.191"></a>
+<FONT color="green">192</FONT>         * {@link DSCompiler#getSize() size} expected by the compiler<a name="line.192"></a>
+<FONT color="green">193</FONT>         * @see #getAllDerivatives()<a name="line.193"></a>
+<FONT color="green">194</FONT>         */<a name="line.194"></a>
+<FONT color="green">195</FONT>        public DerivativeStructure(final int parameters, final int order, final double ... derivatives)<a name="line.195"></a>
+<FONT color="green">196</FONT>            throws DimensionMismatchException {<a name="line.196"></a>
+<FONT color="green">197</FONT>            this(parameters, order);<a name="line.197"></a>
+<FONT color="green">198</FONT>            if (derivatives.length != data.length) {<a name="line.198"></a>
+<FONT color="green">199</FONT>                throw new DimensionMismatchException(derivatives.length, data.length);<a name="line.199"></a>
+<FONT color="green">200</FONT>            }<a name="line.200"></a>
+<FONT color="green">201</FONT>            System.arraycopy(derivatives, 0, data, 0, data.length);<a name="line.201"></a>
+<FONT color="green">202</FONT>        }<a name="line.202"></a>
+<FONT color="green">203</FONT>    <a name="line.203"></a>
+<FONT color="green">204</FONT>        /** Copy constructor.<a name="line.204"></a>
+<FONT color="green">205</FONT>         * @param ds instance to copy<a name="line.205"></a>
+<FONT color="green">206</FONT>         */<a name="line.206"></a>
+<FONT color="green">207</FONT>        private DerivativeStructure(final DerivativeStructure ds) {<a name="line.207"></a>
+<FONT color="green">208</FONT>            this.compiler = ds.compiler;<a name="line.208"></a>
+<FONT color="green">209</FONT>            this.data     = ds.data.clone();<a name="line.209"></a>
+<FONT color="green">210</FONT>        }<a name="line.210"></a>
+<FONT color="green">211</FONT>    <a name="line.211"></a>
+<FONT color="green">212</FONT>        /** Get the number of free parameters.<a name="line.212"></a>
+<FONT color="green">213</FONT>         * @return number of free parameters<a name="line.213"></a>
+<FONT color="green">214</FONT>         */<a name="line.214"></a>
+<FONT color="green">215</FONT>        public int getFreeParameters() {<a name="line.215"></a>
+<FONT color="green">216</FONT>            return compiler.getFreeParameters();<a name="line.216"></a>
+<FONT color="green">217</FONT>        }<a name="line.217"></a>
+<FONT color="green">218</FONT>    <a name="line.218"></a>
+<FONT color="green">219</FONT>        /** Get the derivation order.<a name="line.219"></a>
+<FONT color="green">220</FONT>         * @return derivation order<a name="line.220"></a>
+<FONT color="green">221</FONT>         */<a name="line.221"></a>
+<FONT color="green">222</FONT>        public int getOrder() {<a name="line.222"></a>
+<FONT color="green">223</FONT>            return compiler.getOrder();<a name="line.223"></a>
+<FONT color="green">224</FONT>        }<a name="line.224"></a>
+<FONT color="green">225</FONT>    <a name="line.225"></a>
+<FONT color="green">226</FONT>        /** Get the value part of the derivative structure.<a name="line.226"></a>
+<FONT color="green">227</FONT>         * @return value part of the derivative structure<a name="line.227"></a>
+<FONT color="green">228</FONT>         * @see #getPartialDerivative(int...)<a name="line.228"></a>
+<FONT color="green">229</FONT>         */<a name="line.229"></a>
+<FONT color="green">230</FONT>        public double getValue() {<a name="line.230"></a>
+<FONT color="green">231</FONT>            return data[0];<a name="line.231"></a>
+<FONT color="green">232</FONT>        }<a name="line.232"></a>
+<FONT color="green">233</FONT>    <a name="line.233"></a>
+<FONT color="green">234</FONT>        /** Get a partial derivative.<a name="line.234"></a>
+<FONT color="green">235</FONT>         * @param orders derivation orders with respect to each variable (if all orders are 0,<a name="line.235"></a>
+<FONT color="green">236</FONT>         * the value is returned)<a name="line.236"></a>
+<FONT color="green">237</FONT>         * @return partial derivative<a name="line.237"></a>
+<FONT color="green">238</FONT>         * @see #getValue()<a name="line.238"></a>
+<FONT color="green">239</FONT>         * @exception DimensionMismatchException if the numbers of variables does not<a name="line.239"></a>
+<FONT color="green">240</FONT>         * match the instance<a name="line.240"></a>
+<FONT color="green">241</FONT>         * @exception NumberIsTooLargeException if sum of derivation orders is larger<a name="line.241"></a>
+<FONT color="green">242</FONT>         * than the instance limits<a name="line.242"></a>
+<FONT color="green">243</FONT>         */<a name="line.243"></a>
+<FONT color="green">244</FONT>        public double getPartialDerivative(final int ... orders)<a name="line.244"></a>
+<FONT color="green">245</FONT>            throws DimensionMismatchException, NumberIsTooLargeException {<a name="line.245"></a>
+<FONT color="green">246</FONT>            return data[compiler.getPartialDerivativeIndex(orders)];<a name="line.246"></a>
+<FONT color="green">247</FONT>        }<a name="line.247"></a>
+<FONT color="green">248</FONT>    <a name="line.248"></a>
+<FONT color="green">249</FONT>        /** Get all partial derivatives.<a name="line.249"></a>
+<FONT color="green">250</FONT>         * @return a fresh copy of partial derivatives, in an array sorted according to<a name="line.250"></a>
+<FONT color="green">251</FONT>         * {@link DSCompiler#getPartialDerivativeIndex(int...)}<a name="line.251"></a>
+<FONT color="green">252</FONT>         */<a name="line.252"></a>
+<FONT color="green">253</FONT>        public double[] getAllDerivatives() {<a name="line.253"></a>
+<FONT color="green">254</FONT>            return data.clone();<a name="line.254"></a>
+<FONT color="green">255</FONT>        }<a name="line.255"></a>
+<FONT color="green">256</FONT>    <a name="line.256"></a>
+<FONT color="green">257</FONT>        /** '+' operator.<a name="line.257"></a>
+<FONT color="green">258</FONT>         * @param a right hand side parameter of the operator<a name="line.258"></a>
+<FONT color="green">259</FONT>         * @return this+a<a name="line.259"></a>
+<FONT color="green">260</FONT>         */<a name="line.260"></a>
+<FONT color="green">261</FONT>        public DerivativeStructure add(final double a) {<a name="line.261"></a>
+<FONT color="green">262</FONT>            final DerivativeStructure ds = new DerivativeStructure(this);<a name="line.262"></a>
+<FONT color="green">263</FONT>            ds.data[0] += a;<a name="line.263"></a>
+<FONT color="green">264</FONT>            return ds;<a name="line.264"></a>
+<FONT color="green">265</FONT>        }<a name="line.265"></a>
+<FONT color="green">266</FONT>    <a name="line.266"></a>
+<FONT color="green">267</FONT>        /** '+' operator.<a name="line.267"></a>
+<FONT color="green">268</FONT>         * @param a right hand side parameter of the operator<a name="line.268"></a>
+<FONT color="green">269</FONT>         * @return this+a<a name="line.269"></a>
+<FONT color="green">270</FONT>         * @exception DimensionMismatchException if number of free parameters or orders are inconsistent<a name="line.270"></a>
+<FONT color="green">271</FONT>         */<a name="line.271"></a>
+<FONT color="green">272</FONT>        public DerivativeStructure add(final DerivativeStructure a)<a name="line.272"></a>
+<FONT color="green">273</FONT>            throws DimensionMismatchException {<a name="line.273"></a>
+<FONT color="green">274</FONT>            compiler.checkCompatibility(a.compiler);<a name="line.274"></a>
+<FONT color="green">275</FONT>            final DerivativeStructure ds = new DerivativeStructure(this);<a name="line.275"></a>
+<FONT color="green">276</FONT>            compiler.add(data, 0, a.data, 0, ds.data, 0);<a name="line.276"></a>
+<FONT color="green">277</FONT>            return ds;<a name="line.277"></a>
+<FONT color="green">278</FONT>        }<a name="line.278"></a>
+<FONT color="green">279</FONT>    <a name="line.279"></a>
+<FONT color="green">280</FONT>        /** '-' operator.<a name="line.280"></a>
+<FONT color="green">281</FONT>         * @param a right hand side parameter of the operator<a name="line.281"></a>
+<FONT color="green">282</FONT>         * @return this-a<a name="line.282"></a>
+<FONT color="green">283</FONT>         */<a name="line.283"></a>
+<FONT color="green">284</FONT>        public DerivativeStructure subtract(final double a) {<a name="line.284"></a>
+<FONT color="green">285</FONT>            return add(-a);<a name="line.285"></a>
+<FONT color="green">286</FONT>        }<a name="line.286"></a>
+<FONT color="green">287</FONT>    <a name="line.287"></a>
+<FONT color="green">288</FONT>        /** '-' operator.<a name="line.288"></a>
+<FONT color="green">289</FONT>         * @param a right hand side parameter of the operator<a name="line.289"></a>
+<FONT color="green">290</FONT>         * @return this-a<a name="line.290"></a>
+<FONT color="green">291</FONT>         * @exception DimensionMismatchException if number of free parameters or orders are inconsistent<a name="line.291"></a>
+<FONT color="green">292</FONT>         */<a name="line.292"></a>
+<FONT color="green">293</FONT>        public DerivativeStructure subtract(final DerivativeStructure a)<a name="line.293"></a>
+<FONT color="green">294</FONT>            throws DimensionMismatchException {<a name="line.294"></a>
+<FONT color="green">295</FONT>            compiler.checkCompatibility(a.compiler);<a name="line.295"></a>
+<FONT color="green">296</FONT>            final DerivativeStructure ds = new DerivativeStructure(this);<a name="line.296"></a>
+<FONT color="green">297</FONT>            compiler.subtract(data, 0, a.data, 0, ds.data, 0);<a name="line.297"></a>
+<FONT color="green">298</FONT>            return ds;<a name="line.298"></a>
+<FONT color="green">299</FONT>        }<a name="line.299"></a>
+<FONT color="green">300</FONT>    <a name="line.300"></a>
+<FONT color="green">301</FONT>        /** {@inheritDoc} */<a name="line.301"></a>
+<FONT color="green">302</FONT>        public DerivativeStructure multiply(final int n) {<a name="line.302"></a>
+<FONT color="green">303</FONT>            return multiply((double) n);<a name="line.303"></a>
+<FONT color="green">304</FONT>        }<a name="line.304"></a>
+<FONT color="green">305</FONT>    <a name="line.305"></a>
+<FONT color="green">306</FONT>        /** '&amp;times;' operator.<a name="line.306"></a>
+<FONT color="green">307</FONT>         * @param a right hand side parameter of the operator<a name="line.307"></a>
+<FONT color="green">308</FONT>         * @return this&amp;times;a<a name="line.308"></a>
+<FONT color="green">309</FONT>         */<a name="line.309"></a>
+<FONT color="green">310</FONT>        public DerivativeStructure multiply(final double a) {<a name="line.310"></a>
+<FONT color="green">311</FONT>            final DerivativeStructure ds = new DerivativeStructure(this);<a name="line.311"></a>
+<FONT color="green">312</FONT>            for (int i = 0; i &lt; ds.data.length; ++i) {<a name="line.312"></a>
+<FONT color="green">313</FONT>                ds.data[i] *= a;<a name="line.313"></a>
+<FONT color="green">314</FONT>            }<a name="line.314"></a>
+<FONT color="green">315</FONT>            return ds;<a name="line.315"></a>
+<FONT color="green">316</FONT>        }<a name="line.316"></a>
+<FONT color="green">317</FONT>    <a name="line.317"></a>
+<FONT color="green">318</FONT>        /** '&amp;times;' operator.<a name="line.318"></a>
+<FONT color="green">319</FONT>         * @param a right hand side parameter of the operator<a name="line.319"></a>
+<FONT color="green">320</FONT>         * @return this&amp;times;a<a name="line.320"></a>
+<FONT color="green">321</FONT>         * @exception DimensionMismatchException if number of free parameters or orders are inconsistent<a name="line.321"></a>
+<FONT color="green">322</FONT>         */<a name="line.322"></a>
+<FONT color="green">323</FONT>        public DerivativeStructure multiply(final DerivativeStructure a)<a name="line.323"></a>
+<FONT color="green">324</FONT>            throws DimensionMismatchException {<a name="line.324"></a>
+<FONT color="green">325</FONT>            compiler.checkCompatibility(a.compiler);<a name="line.325"></a>
+<FONT color="green">326</FONT>            final DerivativeStructure result = new DerivativeStructure(compiler);<a name="line.326"></a>
+<FONT color="green">327</FONT>            compiler.multiply(data, 0, a.data, 0, result.data, 0);<a name="line.327"></a>
+<FONT color="green">328</FONT>            return result;<a name="line.328"></a>
+<FONT color="green">329</FONT>        }<a name="line.329"></a>
+<FONT color="green">330</FONT>    <a name="line.330"></a>
+<FONT color="green">331</FONT>        /** '&amp;divides;' operator.<a name="line.331"></a>
+<FONT color="green">332</FONT>         * @param a right hand side parameter of the operator<a name="line.332"></a>
+<FONT color="green">333</FONT>         * @return this&amp;divides;a<a name="line.333"></a>
+<FONT color="green">334</FONT>         */<a name="line.334"></a>
+<FONT color="green">335</FONT>        public DerivativeStructure divide(final double a) {<a name="line.335"></a>
+<FONT color="green">336</FONT>            final DerivativeStructure ds = new DerivativeStructure(this);<a name="line.336"></a>
+<FONT color="green">337</FONT>            for (int i = 0; i &lt; ds.data.length; ++i) {<a name="line.337"></a>
+<FONT color="green">338</FONT>                ds.data[i] /= a;<a name="line.338"></a>
+<FONT color="green">339</FONT>            }<a name="line.339"></a>
+<FONT color="green">340</FONT>            return ds;<a name="line.340"></a>
+<FONT color="green">341</FONT>        }<a name="line.341"></a>
+<FONT color="green">342</FONT>    <a name="line.342"></a>
+<FONT color="green">343</FONT>        /** '&amp;divides;' operator.<a name="line.343"></a>
+<FONT color="green">344</FONT>         * @param a right hand side parameter of the operator<a name="line.344"></a>
+<FONT color="green">345</FONT>         * @return this&amp;divides;a<a name="line.345"></a>
+<FONT color="green">346</FONT>         * @exception DimensionMismatchException if number of free parameters or orders are inconsistent<a name="line.346"></a>
+<FONT color="green">347</FONT>         */<a name="line.347"></a>
+<FONT color="green">348</FONT>        public DerivativeStructure divide(final DerivativeStructure a)<a name="line.348"></a>
+<FONT color="green">349</FONT>            throws DimensionMismatchException {<a name="line.349"></a>
+<FONT color="green">350</FONT>            compiler.checkCompatibility(a.compiler);<a name="line.350"></a>
+<FONT color="green">351</FONT>            final DerivativeStructure result = new DerivativeStructure(compiler);<a name="line.351"></a>
+<FONT color="green">352</FONT>            compiler.divide(data, 0, a.data, 0, result.data, 0);<a name="line.352"></a>
+<FONT color="green">353</FONT>            return result;<a name="line.353"></a>
+<FONT color="green">354</FONT>        }<a name="line.354"></a>
+<FONT color="green">355</FONT>    <a name="line.355"></a>
+<FONT color="green">356</FONT>        /** '%' operator.<a name="line.356"></a>
+<FONT color="green">357</FONT>         * @param a right hand side parameter of the operator<a name="line.357"></a>
+<FONT color="green">358</FONT>         * @return this%a<a name="line.358"></a>
+<FONT color="green">359</FONT>         */<a name="line.359"></a>
+<FONT color="green">360</FONT>        public DerivativeStructure remainder(final double a) {<a name="line.360"></a>
+<FONT color="green">361</FONT>            final DerivativeStructure ds = new DerivativeStructure(this);<a name="line.361"></a>
+<FONT color="green">362</FONT>            ds.data[0] = ds.data[0] % a;<a name="line.362"></a>
+<FONT color="green">363</FONT>            return ds;<a name="line.363"></a>
+<FONT color="green">364</FONT>        }<a name="line.364"></a>
+<FONT color="green">365</FONT>    <a name="line.365"></a>
+<FONT color="green">366</FONT>        /** '%' operator.<a name="line.366"></a>
+<FONT color="green">367</FONT>         * @param a right hand side parameter of the operator<a name="line.367"></a>
+<FONT color="green">368</FONT>         * @return this%a<a name="line.368"></a>
+<FONT color="green">369</FONT>         * @exception DimensionMismatchException if number of free parameters or orders are inconsistent<a name="line.369"></a>
+<FONT color="green">370</FONT>         */<a name="line.370"></a>
+<FONT color="green">371</FONT>        public DerivativeStructure remainder(final DerivativeStructure a)<a name="line.371"></a>
+<FONT color="green">372</FONT>            throws DimensionMismatchException {<a name="line.372"></a>
+<FONT color="green">373</FONT>            compiler.checkCompatibility(a.compiler);<a name="line.373"></a>
+<FONT color="green">374</FONT>            final DerivativeStructure result = new DerivativeStructure(compiler);<a name="line.374"></a>
+<FONT color="green">375</FONT>            compiler.remainder(data, 0, a.data, 0, result.data, 0);<a name="line.375"></a>
+<FONT color="green">376</FONT>            return result;<a name="line.376"></a>
+<FONT color="green">377</FONT>        }<a name="line.377"></a>
+<FONT color="green">378</FONT>    <a name="line.378"></a>
+<FONT color="green">379</FONT>        /** unary '-' operator.<a name="line.379"></a>
+<FONT color="green">380</FONT>         * @return -this<a name="line.380"></a>
+<FONT color="green">381</FONT>         */<a name="line.381"></a>
+<FONT color="green">382</FONT>        public DerivativeStructure negate() {<a name="line.382"></a>
+<FONT color="green">383</FONT>            final DerivativeStructure ds = new DerivativeStructure(compiler);<a name="line.383"></a>
+<FONT color="green">384</FONT>            for (int i = 0; i &lt; ds.data.length; ++i) {<a name="line.384"></a>
+<FONT color="green">385</FONT>                ds.data[i] = -data[i];<a name="line.385"></a>
+<FONT color="green">386</FONT>            }<a name="line.386"></a>
+<FONT color="green">387</FONT>            return ds;<a name="line.387"></a>
+<FONT color="green">388</FONT>        }<a name="line.388"></a>
+<FONT color="green">389</FONT>    <a name="line.389"></a>
+<FONT color="green">390</FONT>        /** absolute value.<a name="line.390"></a>
+<FONT color="green">391</FONT>         * @return abs(this)<a name="line.391"></a>
+<FONT color="green">392</FONT>         */<a name="line.392"></a>
+<FONT color="green">393</FONT>        public DerivativeStructure abs() {<a name="line.393"></a>
+<FONT color="green">394</FONT>            if (Double.doubleToLongBits(data[0]) &lt; 0) {<a name="line.394"></a>
+<FONT color="green">395</FONT>                // we use the bits representation to also handle -0.0<a name="line.395"></a>
+<FONT color="green">396</FONT>                return negate();<a name="line.396"></a>
+<FONT color="green">397</FONT>            } else {<a name="line.397"></a>
+<FONT color="green">398</FONT>                return this;<a name="line.398"></a>
+<FONT color="green">399</FONT>            }<a name="line.399"></a>
+<FONT color="green">400</FONT>        }<a name="line.400"></a>
+<FONT color="green">401</FONT>    <a name="line.401"></a>
+<FONT color="green">402</FONT>        /** Get the smallest whole number larger than instance.<a name="line.402"></a>
+<FONT color="green">403</FONT>         * @return ceil(this)<a name="line.403"></a>
+<FONT color="green">404</FONT>         */<a name="line.404"></a>
+<FONT color="green">405</FONT>        public DerivativeStructure ceil() {<a name="line.405"></a>
+<FONT color="green">406</FONT>            return new DerivativeStructure(compiler.getFreeParameters(),<a name="line.406"></a>
+<FONT color="green">407</FONT>                                           compiler.getOrder(),<a name="line.407"></a>
+<FONT color="green">408</FONT>                                           FastMath.ceil(data[0]));<a name="line.408"></a>
+<FONT color="green">409</FONT>        }<a name="line.409"></a>
+<FONT color="green">410</FONT>    <a name="line.410"></a>
+<FONT color="green">411</FONT>        /** Get the largest whole number smaller than instance.<a name="line.411"></a>
+<FONT color="green">412</FONT>         * @return floor(this)<a name="line.412"></a>
+<FONT color="green">413</FONT>         */<a name="line.413"></a>
+<FONT color="green">414</FONT>        public DerivativeStructure floor() {<a name="line.414"></a>
+<FONT color="green">415</FONT>            return new DerivativeStructure(compiler.getFreeParameters(),<a name="line.415"></a>
+<FONT color="green">416</FONT>                                           compiler.getOrder(),<a name="line.416"></a>
+<FONT color="green">417</FONT>                                           FastMath.floor(data[0]));<a name="line.417"></a>
+<FONT color="green">418</FONT>        }<a name="line.418"></a>
+<FONT color="green">419</FONT>    <a name="line.419"></a>
+<FONT color="green">420</FONT>        /** Get the whole number that is the nearest to the instance, or the even one if x is exactly half way between two integers.<a name="line.420"></a>
+<FONT color="green">421</FONT>         * @return a double number r such that r is an integer r - 0.5 &lt;= this &lt;= r + 0.5<a name="line.421"></a>
+<FONT color="green">422</FONT>         */<a name="line.422"></a>
+<FONT color="green">423</FONT>        public DerivativeStructure rint() {<a name="line.423"></a>
+<FONT color="green">424</FONT>            return new DerivativeStructure(compiler.getFreeParameters(),<a name="line.424"></a>
+<FONT color="green">425</FONT>                                           compiler.getOrder(),<a name="line.425"></a>
+<FONT color="green">426</FONT>                                           FastMath.rint(data[0]));<a name="line.426"></a>
+<FONT color="green">427</FONT>        }<a name="line.427"></a>
+<FONT color="green">428</FONT>    <a name="line.428"></a>
+<FONT color="green">429</FONT>        /** Get the closest long to instance value.<a name="line.429"></a>
+<FONT color="green">430</FONT>         * @return closest long to {@link #getValue()}<a name="line.430"></a>
+<FONT color="green">431</FONT>         */<a name="line.431"></a>
+<FONT color="green">432</FONT>        public long round() {<a name="line.432"></a>
+<FONT color="green">433</FONT>            return FastMath.round(data[0]);<a name="line.433"></a>
+<FONT color="green">434</FONT>        }<a name="line.434"></a>
+<FONT color="green">435</FONT>    <a name="line.435"></a>
+<FONT color="green">436</FONT>        /** Compute the signum of the instance.<a name="line.436"></a>
+<FONT color="green">437</FONT>         * The signum is -1 for negative numbers, +1 for positive numbers and 0 otherwise<a name="line.437"></a>
+<FONT color="green">438</FONT>         * @return -1.0, -0.0, +0.0, +1.0 or NaN depending on sign of a<a name="line.438"></a>
+<FONT color="green">439</FONT>         */<a name="line.439"></a>
+<FONT color="green">440</FONT>        public DerivativeStructure signum() {<a name="line.440"></a>
+<FONT color="green">441</FONT>            return new DerivativeStructure(compiler.getFreeParameters(),<a name="line.441"></a>
+<FONT color="green">442</FONT>                                           compiler.getOrder(),<a name="line.442"></a>
+<FONT color="green">443</FONT>                                           FastMath.signum(data[0]));<a name="line.443"></a>
+<FONT color="green">444</FONT>        }<a name="line.444"></a>
+<FONT color="green">445</FONT>    <a name="line.445"></a>
+<FONT color="green">446</FONT>        /**<a name="line.446"></a>
+<FONT color="green">447</FONT>         * Returns the instance with the sign of the argument.<a name="line.447"></a>
+<FONT color="green">448</FONT>         * A NaN {@code sign} argument is treated as positive.<a name="line.448"></a>
+<FONT color="green">449</FONT>         *<a name="line.449"></a>
+<FONT color="green">450</FONT>         * @param sign the sign for the returned value<a name="line.450"></a>
+<FONT color="green">451</FONT>         * @return the instance with the same sign as the {@code sign} argument<a name="line.451"></a>
+<FONT color="green">452</FONT>         */<a name="line.452"></a>
+<FONT color="green">453</FONT>        public DerivativeStructure copySign(final double sign){<a name="line.453"></a>
+<FONT color="green">454</FONT>            long m = Double.doubleToLongBits(data[0]);<a name="line.454"></a>
+<FONT color="green">455</FONT>            long s = Double.doubleToLongBits(sign);<a name="line.455"></a>
+<FONT color="green">456</FONT>            if ((m &gt;= 0 &amp;&amp; s &gt;= 0) || (m &lt; 0 &amp;&amp; s &lt; 0)) { // Sign is currently OK<a name="line.456"></a>
+<FONT color="green">457</FONT>                return this;<a name="line.457"></a>
+<FONT color="green">458</FONT>            }<a name="line.458"></a>
+<FONT color="green">459</FONT>            return negate(); // flip sign<a name="line.459"></a>
+<FONT color="green">460</FONT>        }<a name="line.460"></a>
+<FONT color="green">461</FONT>    <a name="line.461"></a>
+<FONT color="green">462</FONT>        /**<a name="line.462"></a>
+<FONT color="green">463</FONT>         * Return the exponent of the instance value, removing the bias.<a name="line.463"></a>
+<FONT color="green">464</FONT>         * &lt;p&gt;<a name="line.464"></a>
+<FONT color="green">465</FONT>         * For double numbers of the form 2&lt;sup&gt;x&lt;/sup&gt;, the unbiased<a name="line.465"></a>
+<FONT color="green">466</FONT>         * exponent is exactly x.<a name="line.466"></a>
+<FONT color="green">467</FONT>         * &lt;/p&gt;<a name="line.467"></a>
+<FONT color="green">468</FONT>         * @return exponent for instance in IEEE754 representation, without bias<a name="line.468"></a>
+<FONT color="green">469</FONT>         */<a name="line.469"></a>
+<FONT color="green">470</FONT>        public int getExponent() {<a name="line.470"></a>
+<FONT color="green">471</FONT>            return FastMath.getExponent(data[0]);<a name="line.471"></a>
+<FONT color="green">472</FONT>        }<a name="line.472"></a>
+<FONT color="green">473</FONT>    <a name="line.473"></a>
+<FONT color="green">474</FONT>        /**<a name="line.474"></a>
+<FONT color="green">475</FONT>         * Multiply the instance by a power of 2.<a name="line.475"></a>
+<FONT color="green">476</FONT>         * @param n power of 2<a name="line.476"></a>
+<FONT color="green">477</FONT>         * @return this &amp;times; 2&lt;sup&gt;n&lt;/sup&gt;<a name="line.477"></a>
+<FONT color="green">478</FONT>         */<a name="line.478"></a>
+<FONT color="green">479</FONT>        public DerivativeStructure scalb(final int n) {<a name="line.479"></a>
+<FONT color="green">480</FONT>            final DerivativeStructure ds = new DerivativeStructure(compiler);<a name="line.480"></a>
+<FONT color="green">481</FONT>            for (int i = 0; i &lt; ds.data.length; ++i) {<a name="line.481"></a>
+<FONT color="green">482</FONT>                ds.data[i] = FastMath.scalb(data[i], n);<a name="line.482"></a>
+<FONT color="green">483</FONT>            }<a name="line.483"></a>
+<FONT color="green">484</FONT>            return ds;<a name="line.484"></a>
+<FONT color="green">485</FONT>        }<a name="line.485"></a>
+<FONT color="green">486</FONT>    <a name="line.486"></a>
+<FONT color="green">487</FONT>        /**<a name="line.487"></a>
+<FONT color="green">488</FONT>         * Returns the hypotenuse of a triangle with sides {@code x} and {@code y}<a name="line.488"></a>
+<FONT color="green">489</FONT>         * - sqrt(&lt;i&gt;x&lt;/i&gt;&lt;sup&gt;2&lt;/sup&gt;&amp;nbsp;+&lt;i&gt;y&lt;/i&gt;&lt;sup&gt;2&lt;/sup&gt;)&lt;br/&gt;<a name="line.489"></a>
+<FONT color="green">490</FONT>         * avoiding intermediate overflow or underflow.<a name="line.490"></a>
+<FONT color="green">491</FONT>         *<a name="line.491"></a>
+<FONT color="green">492</FONT>         * &lt;ul&gt;<a name="line.492"></a>
+<FONT color="green">493</FONT>         * &lt;li&gt; If either argument is infinite, then the result is positive infinity.&lt;/li&gt;<a name="line.493"></a>
+<FONT color="green">494</FONT>         * &lt;li&gt; else, if either argument is NaN then the result is NaN.&lt;/li&gt;<a name="line.494"></a>
+<FONT color="green">495</FONT>         * &lt;/ul&gt;<a name="line.495"></a>
+<FONT color="green">496</FONT>         *<a name="line.496"></a>
+<FONT color="green">497</FONT>         * @param x a value<a name="line.497"></a>
+<FONT color="green">498</FONT>         * @param y a value<a name="line.498"></a>
+<FONT color="green">499</FONT>         * @return sqrt(&lt;i&gt;x&lt;/i&gt;&lt;sup&gt;2&lt;/sup&gt;&amp;nbsp;+&lt;i&gt;y&lt;/i&gt;&lt;sup&gt;2&lt;/sup&gt;)<a name="line.499"></a>
+<FONT color="green">500</FONT>         * @exception DimensionMismatchException if number of free parameters or orders are inconsistent<a name="line.500"></a>
+<FONT color="green">501</FONT>         */<a name="line.501"></a>
+<FONT color="green">502</FONT>        public static DerivativeStructure hypot(final DerivativeStructure x, final DerivativeStructure y)<a name="line.502"></a>
+<FONT color="green">503</FONT>            throws DimensionMismatchException {<a name="line.503"></a>
+<FONT color="green">504</FONT>    <a name="line.504"></a>
+<FONT color="green">505</FONT>            x.compiler.checkCompatibility(y.compiler);<a name="line.505"></a>
+<FONT color="green">506</FONT>    <a name="line.506"></a>
+<FONT color="green">507</FONT>            if (Double.isInfinite(x.data[0]) || Double.isInfinite(y.data[0])) {<a name="line.507"></a>
+<FONT color="green">508</FONT>                return new DerivativeStructure(x.compiler.getFreeParameters(),<a name="line.508"></a>
+<FONT color="green">509</FONT>                                               x.compiler.getFreeParameters(),<a name="line.509"></a>
+<FONT color="green">510</FONT>                                               Double.POSITIVE_INFINITY);<a name="line.510"></a>
+<FONT color="green">511</FONT>            } else if (Double.isNaN(x.data[0]) || Double.isNaN(y.data[0])) {<a name="line.511"></a>
+<FONT color="green">512</FONT>                return new DerivativeStructure(x.compiler.getFreeParameters(),<a name="line.512"></a>
+<FONT color="green">513</FONT>                                               x.compiler.getFreeParameters(),<a name="line.513"></a>
+<FONT color="green">514</FONT>                                               Double.NaN);<a name="line.514"></a>
+<FONT color="green">515</FONT>            } else {<a name="line.515"></a>
+<FONT color="green">516</FONT>    <a name="line.516"></a>
+<FONT color="green">517</FONT>                final int expX = x.getExponent();<a name="line.517"></a>
+<FONT color="green">518</FONT>                final int expY = y.getExponent();<a name="line.518"></a>
+<FONT color="green">519</FONT>                if (expX &gt; expY + 27) {<a name="line.519"></a>
+<FONT color="green">520</FONT>                    // y is neglectible with respect to x<a name="line.520"></a>
+<FONT color="green">521</FONT>                    return x.abs();<a name="line.521"></a>
+<FONT color="green">522</FONT>                } else if (expY &gt; expX + 27) {<a name="line.522"></a>
+<FONT color="green">523</FONT>                    // x is neglectible with respect to y<a name="line.523"></a>
+<FONT color="green">524</FONT>                    return y.abs();<a name="line.524"></a>
+<FONT color="green">525</FONT>                } else {<a name="line.525"></a>
+<FONT color="green">526</FONT>    <a name="line.526"></a>
+<FONT color="green">527</FONT>                    // find an intermediate scale to avoid both overflow and underflow<a name="line.527"></a>
+<FONT color="green">528</FONT>                    final int middleExp = (expX + expY) / 2;<a name="line.528"></a>
+<FONT color="green">529</FONT>    <a name="line.529"></a>
+<FONT color="green">530</FONT>                    // scale parameters without losing precision<a name="line.530"></a>
+<FONT color="green">531</FONT>                    final DerivativeStructure scaledX = x.scalb(-middleExp);<a name="line.531"></a>
+<FONT color="green">532</FONT>                    final DerivativeStructure scaledY = y.scalb(-middleExp);<a name="line.532"></a>
+<FONT color="green">533</FONT>    <a name="line.533"></a>
+<FONT color="green">534</FONT>                    // compute scaled hypotenuse<a name="line.534"></a>
+<FONT color="green">535</FONT>                    final DerivativeStructure scaledH =<a name="line.535"></a>
+<FONT color="green">536</FONT>                            scaledX.multiply(scaledX).add(scaledY.multiply(scaledY)).sqrt();<a name="line.536"></a>
+<FONT color="green">537</FONT>    <a name="line.537"></a>
+<FONT color="green">538</FONT>                    // remove scaling<a name="line.538"></a>
+<FONT color="green">539</FONT>                    return scaledH.scalb(middleExp);<a name="line.539"></a>
+<FONT color="green">540</FONT>    <a name="line.540"></a>
+<FONT color="green">541</FONT>                }<a name="line.541"></a>
+<FONT color="green">542</FONT>    <a name="line.542"></a>
+<FONT color="green">543</FONT>            }<a name="line.543"></a>
+<FONT color="green">544</FONT>        }<a name="line.544"></a>
+<FONT color="green">545</FONT>    <a name="line.545"></a>
+<FONT color="green">546</FONT>        /** Compute composition of the instance by a univariate function.<a name="line.546"></a>
+<FONT color="green">547</FONT>         * @param f array of value and derivatives of the function at<a name="line.547"></a>
+<FONT color="green">548</FONT>         * the current point (i.e. [f({@link #getValue()}),<a name="line.548"></a>
+<FONT color="green">549</FONT>         * f'({@link #getValue()}), f''({@link #getValue()})...]).<a name="line.549"></a>
+<FONT color="green">550</FONT>         * @return f(this)<a name="line.550"></a>
+<FONT color="green">551</FONT>         * @exception DimensionMismatchException if the number of derivatives<a name="line.551"></a>
+<FONT color="green">552</FONT>         * in the array is not equal to {@link #getOrder() order} + 1<a name="line.552"></a>
+<FONT color="green">553</FONT>         */<a name="line.553"></a>
+<FONT color="green">554</FONT>        public DerivativeStructure compose(final double ... f) {<a name="line.554"></a>
+<FONT color="green">555</FONT>            if (f.length != getOrder() + 1) {<a name="line.555"></a>
+<FONT color="green">556</FONT>                throw new DimensionMismatchException(f.length, getOrder() + 1);<a name="line.556"></a>
+<FONT color="green">557</FONT>            }<a name="line.557"></a>
+<FONT color="green">558</FONT>            final DerivativeStructure result = new DerivativeStructure(compiler);<a name="line.558"></a>
+<FONT color="green">559</FONT>            compiler.compose(data, 0, f, result.data, 0);<a name="line.559"></a>
+<FONT color="green">560</FONT>            return result;<a name="line.560"></a>
+<FONT color="green">561</FONT>        }<a name="line.561"></a>
+<FONT color="green">562</FONT>    <a name="line.562"></a>
+<FONT color="green">563</FONT>        /** {@inheritDoc} */<a name="line.563"></a>
+<FONT color="green">564</FONT>        public DerivativeStructure reciprocal() {<a name="line.564"></a>
+<FONT color="green">565</FONT>            final DerivativeStructure result = new DerivativeStructure(compiler);<a name="line.565"></a>
+<FONT color="green">566</FONT>            compiler.pow(data, 0, -1, result.data, 0);<a name="line.566"></a>
+<FONT color="green">567</FONT>            return result;<a name="line.567"></a>
+<FONT color="green">568</FONT>        }<a name="line.568"></a>
+<FONT color="green">569</FONT>    <a name="line.569"></a>
+<FONT color="green">570</FONT>        /** Square root.<a name="line.570"></a>
+<FONT color="green">571</FONT>         * @return square root of the instance<a name="line.571"></a>
+<FONT color="green">572</FONT>         */<a name="line.572"></a>
+<FONT color="green">573</FONT>        public DerivativeStructure sqrt() {<a name="line.573"></a>
+<FONT color="green">574</FONT>            return rootN(2);<a name="line.574"></a>
+<FONT color="green">575</FONT>        }<a name="line.575"></a>
+<FONT color="green">576</FONT>    <a name="line.576"></a>
+<FONT color="green">577</FONT>        /** Cubic root.<a name="line.577"></a>
+<FONT color="green">578</FONT>         * @return cubic root of the instance<a name="line.578"></a>
+<FONT color="green">579</FONT>         */<a name="line.579"></a>
+<FONT color="green">580</FONT>        public DerivativeStructure cbrt() {<a name="line.580"></a>
+<FONT color="green">581</FONT>            return rootN(3);<a name="line.581"></a>
+<FONT color="green">582</FONT>        }<a name="line.582"></a>
+<FONT color="green">583</FONT>    <a name="line.583"></a>
+<FONT color="green">584</FONT>        /** N&lt;sup&gt;th&lt;/sup&gt; root.<a name="line.584"></a>
+<FONT color="green">585</FONT>         * @param n order of the root<a name="line.585"></a>
+<FONT color="green">586</FONT>         * @return n&lt;sup&gt;th&lt;/sup&gt; root of the instance<a name="line.586"></a>
+<FONT color="green">587</FONT>         */<a name="line.587"></a>
+<FONT color="green">588</FONT>        public DerivativeStructure rootN(final int n) {<a name="line.588"></a>
+<FONT color="green">589</FONT>            final DerivativeStructure result = new DerivativeStructure(compiler);<a name="line.589"></a>
+<FONT color="green">590</FONT>            compiler.rootN(data, 0, n, result.data, 0);<a name="line.590"></a>
+<FONT color="green">591</FONT>            return result;<a name="line.591"></a>
+<FONT color="green">592</FONT>        }<a name="line.592"></a>
+<FONT color="green">593</FONT>    <a name="line.593"></a>
+<FONT color="green">594</FONT>        /** {@inheritDoc} */<a name="line.594"></a>
+<FONT color="green">595</FONT>        public Field&lt;DerivativeStructure&gt; getField() {<a name="line.595"></a>
+<FONT color="green">596</FONT>            return new Field&lt;DerivativeStructure&gt;() {<a name="line.596"></a>
+<FONT color="green">597</FONT>    <a name="line.597"></a>
+<FONT color="green">598</FONT>                /** {@inheritDoc} */<a name="line.598"></a>
+<FONT color="green">599</FONT>                public DerivativeStructure getZero() {<a name="line.599"></a>
+<FONT color="green">600</FONT>                    return new DerivativeStructure(compiler.getFreeParameters(), compiler.getOrder(), 0.0);<a name="line.600"></a>
+<FONT color="green">601</FONT>                }<a name="line.601"></a>
+<FONT color="green">602</FONT>    <a name="line.602"></a>
+<FONT color="green">603</FONT>                /** {@inheritDoc} */<a name="line.603"></a>
+<FONT color="green">604</FONT>                public DerivativeStructure getOne() {<a name="line.604"></a>
+<FONT color="green">605</FONT>                    return new DerivativeStructure(compiler.getFreeParameters(), compiler.getOrder(), 1.0);<a name="line.605"></a>
+<FONT color="green">606</FONT>                }<a name="line.606"></a>
+<FONT color="green">607</FONT>    <a name="line.607"></a>
+<FONT color="green">608</FONT>                /** {@inheritDoc} */<a name="line.608"></a>
+<FONT color="green">609</FONT>                public Class&lt;? extends FieldElement&lt;DerivativeStructure&gt;&gt; getRuntimeClass() {<a name="line.609"></a>
+<FONT color="green">610</FONT>                    return DerivativeStructure.class;<a name="line.610"></a>
+<FONT color="green">611</FONT>                }<a name="line.611"></a>
+<FONT color="green">612</FONT>    <a name="line.612"></a>
+<FONT color="green">613</FONT>            };<a name="line.613"></a>
+<FONT color="green">614</FONT>        }<a name="line.614"></a>
+<FONT color="green">615</FONT>    <a name="line.615"></a>
+<FONT color="green">616</FONT>        /** Power operation.<a name="line.616"></a>
+<FONT color="green">617</FONT>         * @param p power to apply<a name="line.617"></a>
+<FONT color="green">618</FONT>         * @return this&lt;sup&gt;p&lt;/sup&gt;<a name="line.618"></a>
+<FONT color="green">619</FONT>         */<a name="line.619"></a>
+<FONT color="green">620</FONT>        public DerivativeStructure pow(final double p) {<a name="line.620"></a>
+<FONT color="green">621</FONT>            final DerivativeStructure result = new DerivativeStructure(compiler);<a name="line.621"></a>
+<FONT color="green">622</FONT>            compiler.pow(data, 0, p, result.data, 0);<a name="line.622"></a>
+<FONT color="green">623</FONT>            return result;<a name="line.623"></a>
+<FONT color="green">624</FONT>        }<a name="line.624"></a>
+<FONT color="green">625</FONT>    <a name="line.625"></a>
+<FONT color="green">626</FONT>        /** Integer power operation.<a name="line.626"></a>
+<FONT color="green">627</FONT>         * @param n power to apply<a name="line.627"></a>
+<FONT color="green">628</FONT>         * @return this&lt;sup&gt;n&lt;/sup&gt;<a name="line.628"></a>
+<FONT color="green">629</FONT>         */<a name="line.629"></a>
+<FONT color="green">630</FONT>        public DerivativeStructure pow(final int n) {<a name="line.630"></a>
+<FONT color="green">631</FONT>            final DerivativeStructure result = new DerivativeStructure(compiler);<a name="line.631"></a>
+<FONT color="green">632</FONT>            compiler.pow(data, 0, n, result.data, 0);<a name="line.632"></a>
+<FONT color="green">633</FONT>            return result;<a name="line.633"></a>
+<FONT color="green">634</FONT>        }<a name="line.634"></a>
+<FONT color="green">635</FONT>    <a name="line.635"></a>
+<FONT color="green">636</FONT>        /** Power operation.<a name="line.636"></a>
+<FONT color="green">637</FONT>         * @param e exponent<a name="line.637"></a>
+<FONT color="green">638</FONT>         * @return this&lt;sup&gt;e&lt;/sup&gt;<a name="line.638"></a>
+<FONT color="green">639</FONT>         * @exception DimensionMismatchException if number of free parameters or orders are inconsistent<a name="line.639"></a>
+<FONT color="green">640</FONT>         */<a name="line.640"></a>
+<FONT color="green">641</FONT>        public DerivativeStructure pow(final DerivativeStructure e)<a name="line.641"></a>
+<FONT color="green">642</FONT>            throws DimensionMismatchException {<a name="line.642"></a>
+<FONT color="green">643</FONT>            compiler.checkCompatibility(e.compiler);<a name="line.643"></a>
+<FONT color="green">644</FONT>            final DerivativeStructure result = new DerivativeStructure(compiler);<a name="line.644"></a>
+<FONT color="green">645</FONT>            compiler.pow(data, 0, e.data, 0, result.data, 0);<a name="line.645"></a>
+<FONT color="green">646</FONT>            return result;<a name="line.646"></a>
+<FONT color="green">647</FONT>        }<a name="line.647"></a>
+<FONT color="green">648</FONT>    <a name="line.648"></a>
+<FONT color="green">649</FONT>        /** Exponential.<a name="line.649"></a>
+<FONT color="green">650</FONT>         * @return exponential of the instance<a name="line.650"></a>
+<FONT color="green">651</FONT>         */<a name="line.651"></a>
+<FONT color="green">652</FONT>        public DerivativeStructure exp() {<a name="line.652"></a>
+<FONT color="green">653</FONT>            final DerivativeStructure result = new DerivativeStructure(compiler);<a name="line.653"></a>
+<FONT color="green">654</FONT>            compiler.exp(data, 0, result.data, 0);<a name="line.654"></a>
+<FONT color="green">655</FONT>            return result;<a name="line.655"></a>
+<FONT color="green">656</FONT>        }<a name="line.656"></a>
+<FONT color="green">657</FONT>    <a name="line.657"></a>
+<FONT color="green">658</FONT>        /** Exponential minus 1.<a name="line.658"></a>
+<FONT color="green">659</FONT>         * @return exponential minus one of the instance<a name="line.659"></a>
+<FONT color="green">660</FONT>         */<a name="line.660"></a>
+<FONT color="green">661</FONT>        public DerivativeStructure expm1() {<a name="line.661"></a>
+<FONT color="green">662</FONT>            final DerivativeStructure result = new DerivativeStructure(compiler);<a name="line.662"></a>
+<FONT color="green">663</FONT>            compiler.expm1(data, 0, result.data, 0);<a name="line.663"></a>
+<FONT color="green">664</FONT>            return result;<a name="line.664"></a>
+<FONT color="green">665</FONT>        }<a name="line.665"></a>
+<FONT color="green">666</FONT>    <a name="line.666"></a>
+<FONT color="green">667</FONT>        /** Natural logarithm.<a name="line.667"></a>
+<FONT color="green">668</FONT>         * @return logarithm of the instance<a name="line.668"></a>
+<FONT color="green">669</FONT>         */<a name="line.669"></a>
+<FONT color="green">670</FONT>        public DerivativeStructure log() {<a name="line.670"></a>
+<FONT color="green">671</FONT>            final DerivativeStructure result = new DerivativeStructure(compiler);<a name="line.671"></a>
+<FONT color="green">672</FONT>            compiler.log(data, 0, result.data, 0);<a name="line.672"></a>
+<FONT color="green">673</FONT>            return result;<a name="line.673"></a>
+<FONT color="green">674</FONT>        }<a name="line.674"></a>
+<FONT color="green">675</FONT>    <a name="line.675"></a>
+<FONT color="green">676</FONT>        /** Shifted natural logarithm.<a name="line.676"></a>
+<FONT color="green">677</FONT>         * @return logarithm of one plus the instance<a name="line.677"></a>
+<FONT color="green">678</FONT>         */<a name="line.678"></a>
+<FONT color="green">679</FONT>        public DerivativeStructure log1p() {<a name="line.679"></a>
+<FONT color="green">680</FONT>            final DerivativeStructure result = new DerivativeStructure(compiler);<a name="line.680"></a>
+<FONT color="green">681</FONT>            compiler.log1p(data, 0, result.data, 0);<a name="line.681"></a>
+<FONT color="green">682</FONT>            return result;<a name="line.682"></a>
+<FONT color="green">683</FONT>        }<a name="line.683"></a>
+<FONT color="green">684</FONT>    <a name="line.684"></a>
+<FONT color="green">685</FONT>        /** Base 10 logarithm.<a name="line.685"></a>
+<FONT color="green">686</FONT>         * @return base 10 logarithm of the instance<a name="line.686"></a>
+<FONT color="green">687</FONT>         */<a name="line.687"></a>
+<FONT color="green">688</FONT>        public DerivativeStructure log10() {<a name="line.688"></a>
+<FONT color="green">689</FONT>            final DerivativeStructure result = new DerivativeStructure(compiler);<a name="line.689"></a>
+<FONT color="green">690</FONT>            compiler.log10(data, 0, result.data, 0);<a name="line.690"></a>
+<FONT color="green">691</FONT>            return result;<a name="line.691"></a>
+<FONT color="green">692</FONT>        }<a name="line.692"></a>
+<FONT color="green">693</FONT>    <a name="line.693"></a>
+<FONT color="green">694</FONT>        /** Cosine operation.<a name="line.694"></a>
+<FONT color="green">695</FONT>         * @return cos(this)<a name="line.695"></a>
+<FONT color="green">696</FONT>         */<a name="line.696"></a>
+<FONT color="green">697</FONT>        public DerivativeStructure cos() {<a name="line.697"></a>
+<FONT color="green">698</FONT>            final DerivativeStructure result = new DerivativeStructure(compiler);<a name="line.698"></a>
+<FONT color="green">699</FONT>            compiler.cos(data, 0, result.data, 0);<a name="line.699"></a>
+<FONT color="green">700</FONT>            return result;<a name="line.700"></a>
+<FONT color="green">701</FONT>        }<a name="line.701"></a>
+<FONT color="green">702</FONT>    <a name="line.702"></a>
+<FONT color="green">703</FONT>        /** Sine operation.<a name="line.703"></a>
+<FONT color="green">704</FONT>         * @return sin(this)<a name="line.704"></a>
+<FONT color="green">705</FONT>         */<a name="line.705"></a>
+<FONT color="green">706</FONT>        public DerivativeStructure sin() {<a name="line.706"></a>
+<FONT color="green">707</FONT>            final DerivativeStructure result = new DerivativeStructure(compiler);<a name="line.707"></a>
+<FONT color="green">708</FONT>            compiler.sin(data, 0, result.data, 0);<a name="line.708"></a>
+<FONT color="green">709</FONT>            return result;<a name="line.709"></a>
+<FONT color="green">710</FONT>        }<a name="line.710"></a>
+<FONT color="green">711</FONT>    <a name="line.711"></a>
+<FONT color="green">712</FONT>        /** Tangent operation.<a name="line.712"></a>
+<FONT color="green">713</FONT>         * @return tan(this)<a name="line.713"></a>
+<FONT color="green">714</FONT>         */<a name="line.714"></a>
+<FONT color="green">715</FONT>        public DerivativeStructure tan() {<a name="line.715"></a>
+<FONT color="green">716</FONT>            final DerivativeStructure result = new DerivativeStructure(compiler);<a name="line.716"></a>
+<FONT color="green">717</FONT>            compiler.tan(data, 0, result.data, 0);<a name="line.717"></a>
+<FONT color="green">718</FONT>            return result;<a name="line.718"></a>
+<FONT color="green">719</FONT>        }<a name="line.719"></a>
+<FONT color="green">720</FONT>    <a name="line.720"></a>
+<FONT color="green">721</FONT>        /** Arc cosine operation.<a name="line.721"></a>
+<FONT color="green">722</FONT>         * @return acos(this)<a name="line.722"></a>
+<FONT color="green">723</FONT>         */<a name="line.723"></a>
+<FONT color="green">724</FONT>        public DerivativeStructure acos() {<a name="line.724"></a>
+<FONT color="green">725</FONT>            final DerivativeStructure result = new DerivativeStructure(compiler);<a name="line.725"></a>
+<FONT color="green">726</FONT>            compiler.acos(data, 0, result.data, 0);<a name="line.726"></a>
+<FONT color="green">727</FONT>            return result;<a name="line.727"></a>
+<FONT color="green">728</FONT>        }<a name="line.728"></a>
+<FONT color="green">729</FONT>    <a name="line.729"></a>
+<FONT color="green">730</FONT>        /** Arc sine operation.<a name="line.730"></a>
+<FONT color="green">731</FONT>         * @return asin(this)<a name="line.731"></a>
+<FONT color="green">732</FONT>         */<a name="line.732"></a>
+<FONT color="green">733</FONT>        public DerivativeStructure asin() {<a name="line.733"></a>
+<FONT color="green">734</FONT>            final DerivativeStructure result = new DerivativeStructure(compiler);<a name="line.734"></a>
+<FONT color="green">735</FONT>            compiler.asin(data, 0, result.data, 0);<a name="line.735"></a>
+<FONT color="green">736</FONT>            return result;<a name="line.736"></a>
+<FONT color="green">737</FONT>        }<a name="line.737"></a>
+<FONT color="green">738</FONT>    <a name="line.738"></a>
+<FONT color="green">739</FONT>        /** Arc tangent operation.<a name="line.739"></a>
+<FONT color="green">740</FONT>         * @return atan(this)<a name="line.740"></a>
+<FONT color="green">741</FONT>         */<a name="line.741"></a>
+<FONT color="green">742</FONT>        public DerivativeStructure atan() {<a name="line.742"></a>
+<FONT color="green">743</FONT>            final DerivativeStructure result = new DerivativeStructure(compiler);<a name="line.743"></a>
+<FONT color="green">744</FONT>            compiler.atan(data, 0, result.data, 0);<a name="line.744"></a>
+<FONT color="green">745</FONT>            return result;<a name="line.745"></a>
+<FONT color="green">746</FONT>        }<a name="line.746"></a>
+<FONT color="green">747</FONT>    <a name="line.747"></a>
+<FONT color="green">748</FONT>        /** Two arguments arc tangent operation.<a name="line.748"></a>
+<FONT color="green">749</FONT>         * @param y first argument of the arc tangent<a name="line.749"></a>
+<FONT color="green">750</FONT>         * @param x second argument of the arc tangent<a name="line.750"></a>
+<FONT color="green">751</FONT>         * @return atan2(y, x)<a name="line.751"></a>
+<FONT color="green">752</FONT>         * @exception DimensionMismatchException if number of free parameters or orders are inconsistent<a name="line.752"></a>
+<FONT color="green">753</FONT>         */<a name="line.753"></a>
+<FONT color="green">754</FONT>        public static DerivativeStructure atan2(final DerivativeStructure y, final DerivativeStructure x)<a name="line.754"></a>
+<FONT color="green">755</FONT>            throws DimensionMismatchException {<a name="line.755"></a>
+<FONT color="green">756</FONT>            y.compiler.checkCompatibility(x.compiler);<a name="line.756"></a>
+<FONT color="green">757</FONT>            final DerivativeStructure result = new DerivativeStructure(y.compiler);<a name="line.757"></a>
+<FONT color="green">758</FONT>            y.compiler.atan2(y.data, 0, x.data, 0, result.data, 0);<a name="line.758"></a>
+<FONT color="green">759</FONT>            return result;<a name="line.759"></a>
+<FONT color="green">760</FONT>        }<a name="line.760"></a>
+<FONT color="green">761</FONT>    <a name="line.761"></a>
+<FONT color="green">762</FONT>        /** Hyperbolic cosine operation.<a name="line.762"></a>
+<FONT color="green">763</FONT>         * @return cosh(this)<a name="line.763"></a>
+<FONT color="green">764</FONT>         */<a name="line.764"></a>
+<FONT color="green">765</FONT>        public DerivativeStructure cosh() {<a name="line.765"></a>
+<FONT color="green">766</FONT>            final DerivativeStructure result = new DerivativeStructure(compiler);<a name="line.766"></a>
+<FONT color="green">767</FONT>            compiler.cosh(data, 0, result.data, 0);<a name="line.767"></a>
+<FONT color="green">768</FONT>            return result;<a name="line.768"></a>
+<FONT color="green">769</FONT>        }<a name="line.769"></a>
+<FONT color="green">770</FONT>    <a name="line.770"></a>
+<FONT color="green">771</FONT>        /** Hyperbolic sine operation.<a name="line.771"></a>
+<FONT color="green">772</FONT>         * @return sinh(this)<a name="line.772"></a>
+<FONT color="green">773</FONT>         */<a name="line.773"></a>
+<FONT color="green">774</FONT>        public DerivativeStructure sinh() {<a name="line.774"></a>
+<FONT color="green">775</FONT>            final DerivativeStructure result = new DerivativeStructure(compiler);<a name="line.775"></a>
+<FONT color="green">776</FONT>            compiler.sinh(data, 0, result.data, 0);<a name="line.776"></a>
+<FONT color="green">777</FONT>            return result;<a name="line.777"></a>
+<FONT color="green">778</FONT>        }<a name="line.778"></a>
+<FONT color="green">779</FONT>    <a name="line.779"></a>
+<FONT color="green">780</FONT>        /** Hyperbolic tangent operation.<a name="line.780"></a>
+<FONT color="green">781</FONT>         * @return tanh(this)<a name="line.781"></a>
+<FONT color="green">782</FONT>         */<a name="line.782"></a>
+<FONT color="green">783</FONT>        public DerivativeStructure tanh() {<a name="line.783"></a>
+<FONT color="green">784</FONT>            final DerivativeStructure result = new DerivativeStructure(compiler);<a name="line.784"></a>
+<FONT color="green">785</FONT>            compiler.tanh(data, 0, result.data, 0);<a name="line.785"></a>
+<FONT color="green">786</FONT>            return result;<a name="line.786"></a>
+<FONT color="green">787</FONT>        }<a name="line.787"></a>
+<FONT color="green">788</FONT>    <a name="line.788"></a>
+<FONT color="green">789</FONT>        /** Inverse hyperbolic cosine operation.<a name="line.789"></a>
+<FONT color="green">790</FONT>         * @return acosh(this)<a name="line.790"></a>
+<FONT color="green">791</FONT>         */<a name="line.791"></a>
+<FONT color="green">792</FONT>        public DerivativeStructure acosh() {<a name="line.792"></a>
+<FONT color="green">793</FONT>            final DerivativeStructure result = new DerivativeStructure(compiler);<a name="line.793"></a>
+<FONT color="green">794</FONT>            compiler.acosh(data, 0, result.data, 0);<a name="line.794"></a>
+<FONT color="green">795</FONT>            return result;<a name="line.795"></a>
+<FONT color="green">796</FONT>        }<a name="line.796"></a>
+<FONT color="green">797</FONT>    <a name="line.797"></a>
+<FONT color="green">798</FONT>        /** Inverse hyperbolic sine operation.<a name="line.798"></a>
+<FONT color="green">799</FONT>         * @return asin(this)<a name="line.799"></a>
+<FONT color="green">800</FONT>         */<a name="line.800"></a>
+<FONT color="green">801</FONT>        public DerivativeStructure asinh() {<a name="line.801"></a>
+<FONT color="green">802</FONT>            final DerivativeStructure result = new DerivativeStructure(compiler);<a name="line.802"></a>
+<FONT color="green">803</FONT>            compiler.asinh(data, 0, result.data, 0);<a name="line.803"></a>
+<FONT color="green">804</FONT>            return result;<a name="line.804"></a>
+<FONT color="green">805</FONT>        }<a name="line.805"></a>
+<FONT color="green">806</FONT>    <a name="line.806"></a>
+<FONT color="green">807</FONT>        /** Inverse hyperbolic  tangent operation.<a name="line.807"></a>
+<FONT color="green">808</FONT>         * @return atanh(this)<a name="line.808"></a>
+<FONT color="green">809</FONT>         */<a name="line.809"></a>
+<FONT color="green">810</FONT>        public DerivativeStructure atanh() {<a name="line.810"></a>
+<FONT color="green">811</FONT>            final DerivativeStructure result = new DerivativeStructure(compiler);<a name="line.811"></a>
+<FONT color="green">812</FONT>            compiler.atanh(data, 0, result.data, 0);<a name="line.812"></a>
+<FONT color="green">813</FONT>            return result;<a name="line.813"></a>
+<FONT color="green">814</FONT>        }<a name="line.814"></a>
+<FONT color="green">815</FONT>    <a name="line.815"></a>
+<FONT color="green">816</FONT>        /** Convert radians to degrees, with error of less than 0.5 ULP<a name="line.816"></a>
+<FONT color="green">817</FONT>         *  @return instance converted into degrees<a name="line.817"></a>
+<FONT color="green">818</FONT>         */<a name="line.818"></a>
+<FONT color="green">819</FONT>        public DerivativeStructure toDegrees() {<a name="line.819"></a>
+<FONT color="green">820</FONT>            final DerivativeStructure ds = new DerivativeStructure(compiler);<a name="line.820"></a>
+<FONT color="green">821</FONT>            for (int i = 0; i &lt; ds.data.length; ++i) {<a name="line.821"></a>
+<FONT color="green">822</FONT>                ds.data[i] = FastMath.toDegrees(data[i]);<a name="line.822"></a>
+<FONT color="green">823</FONT>            }<a name="line.823"></a>
+<FONT color="green">824</FONT>            return ds;<a name="line.824"></a>
+<FONT color="green">825</FONT>        }<a name="line.825"></a>
+<FONT color="green">826</FONT>    <a name="line.826"></a>
+<FONT color="green">827</FONT>        /** Convert degrees to radians, with error of less than 0.5 ULP<a name="line.827"></a>
+<FONT color="green">828</FONT>         *  @return instance converted into radians<a name="line.828"></a>
+<FONT color="green">829</FONT>         */<a name="line.829"></a>
+<FONT color="green">830</FONT>        public DerivativeStructure toRadians() {<a name="line.830"></a>
+<FONT color="green">831</FONT>            final DerivativeStructure ds = new DerivativeStructure(compiler);<a name="line.831"></a>
+<FONT color="green">832</FONT>            for (int i = 0; i &lt; ds.data.length; ++i) {<a name="line.832"></a>
+<FONT color="green">833</FONT>                ds.data[i] = FastMath.toRadians(data[i]);<a name="line.833"></a>
+<FONT color="green">834</FONT>            }<a name="line.834"></a>
+<FONT color="green">835</FONT>            return ds;<a name="line.835"></a>
+<FONT color="green">836</FONT>        }<a name="line.836"></a>
+<FONT color="green">837</FONT>    <a name="line.837"></a>
+<FONT color="green">838</FONT>        /** Evaluate Taylor expansion a derivative structure.<a name="line.838"></a>
+<FONT color="green">839</FONT>         * @param delta parameters offsets (&amp;Delta;x, &amp;Delta;y, ...)<a name="line.839"></a>
+<FONT color="green">840</FONT>         * @return value of the Taylor expansion at x + &amp;Delta;x, y + &amp;Delta;y, ...<a name="line.840"></a>
+<FONT color="green">841</FONT>         */<a name="line.841"></a>
+<FONT color="green">842</FONT>        public double taylor(final double ... delta) {<a name="line.842"></a>
+<FONT color="green">843</FONT>            return compiler.taylor(data, 0, delta);<a name="line.843"></a>
+<FONT color="green">844</FONT>        }<a name="line.844"></a>
+<FONT color="green">845</FONT>    <a name="line.845"></a>
+<FONT color="green">846</FONT>        /**<a name="line.846"></a>
+<FONT color="green">847</FONT>         * Replace the instance with a data transfer object for serialization.<a name="line.847"></a>
+<FONT color="green">848</FONT>         * @return data transfer object that will be serialized<a name="line.848"></a>
+<FONT color="green">849</FONT>         */<a name="line.849"></a>
+<FONT color="green">850</FONT>        private Object writeReplace() {<a name="line.850"></a>
+<FONT color="green">851</FONT>            return new DataTransferObject(compiler.getFreeParameters(), compiler.getOrder(), data);<a name="line.851"></a>
+<FONT color="green">852</FONT>        }<a name="line.852"></a>
+<FONT color="green">853</FONT>    <a name="line.853"></a>
+<FONT color="green">854</FONT>        /** Internal class used only for serialization. */<a name="line.854"></a>
+<FONT color="green">855</FONT>        private static class DataTransferObject implements Serializable {<a name="line.855"></a>
+<FONT color="green">856</FONT>    <a name="line.856"></a>
+<FONT color="green">857</FONT>            /** Serializable UID. */<a name="line.857"></a>
+<FONT color="green">858</FONT>            private static final long serialVersionUID = 20120730L;<a name="line.858"></a>
+<FONT color="green">859</FONT>    <a name="line.859"></a>
+<FONT color="green">860</FONT>            /** Number of variables.<a name="line.860"></a>
+<FONT color="green">861</FONT>             * @serial<a name="line.861"></a>
+<FONT color="green">862</FONT>             */<a name="line.862"></a>
+<FONT color="green">863</FONT>            private final int variables;<a name="line.863"></a>
+<FONT color="green">864</FONT>    <a name="line.864"></a>
+<FONT color="green">865</FONT>            /** Derivation order.<a name="line.865"></a>
+<FONT color="green">866</FONT>             * @serial<a name="line.866"></a>
+<FONT color="green">867</FONT>             */<a name="line.867"></a>
+<FONT color="green">868</FONT>            private final int order;<a name="line.868"></a>
+<FONT color="green">869</FONT>    <a name="line.869"></a>
+<FONT color="green">870</FONT>            /** Partial derivatives.<a name="line.870"></a>
+<FONT color="green">871</FONT>             * @serial<a name="line.871"></a>
+<FONT color="green">872</FONT>             */<a name="line.872"></a>
+<FONT color="green">873</FONT>            private final double[] data;<a name="line.873"></a>
+<FONT color="green">874</FONT>    <a name="line.874"></a>
+<FONT color="green">875</FONT>            /** Simple constructor.<a name="line.875"></a>
+<FONT color="green">876</FONT>             * @param variables number of variables<a name="line.876"></a>
+<FONT color="green">877</FONT>             * @param order derivation order<a name="line.877"></a>
+<FONT color="green">878</FONT>             * @param data partial derivatives<a name="line.878"></a>
+<FONT color="green">879</FONT>             */<a name="line.879"></a>
+<FONT color="green">880</FONT>            public DataTransferObject(final int variables, final int order, final double[] data) {<a name="line.880"></a>
+<FONT color="green">881</FONT>                this.variables = variables;<a name="line.881"></a>
+<FONT color="green">882</FONT>                this.order     = order;<a name="line.882"></a>
+<FONT color="green">883</FONT>                this.data      = data;<a name="line.883"></a>
+<FONT color="green">884</FONT>            }<a name="line.884"></a>
+<FONT color="green">885</FONT>    <a name="line.885"></a>
+<FONT color="green">886</FONT>            /** Replace the deserialized data transfer object with a {@link DerivativeStructure}.<a name="line.886"></a>
+<FONT color="green">887</FONT>             * @return replacement {@link DerivativeStructure}<a name="line.887"></a>
+<FONT color="green">888</FONT>             */<a name="line.888"></a>
+<FONT color="green">889</FONT>            private Object readResolve() {<a name="line.889"></a>
+<FONT color="green">890</FONT>                return new DerivativeStructure(variables, order, data);<a name="line.890"></a>
+<FONT color="green">891</FONT>            }<a name="line.891"></a>
+<FONT color="green">892</FONT>    <a name="line.892"></a>
+<FONT color="green">893</FONT>        }<a name="line.893"></a>
+<FONT color="green">894</FONT>    <a name="line.894"></a>
+<FONT color="green">895</FONT>    }<a name="line.895"></a>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</PRE>
+</BODY>
+</HTML>

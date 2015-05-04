@@ -1,0 +1,498 @@
+<HTML>
+<BODY BGCOLOR="white">
+<PRE>
+<FONT color="green">001</FONT>    /*<a name="line.1"></a>
+<FONT color="green">002</FONT>     * Licensed to the Apache Software Foundation (ASF) under one or more<a name="line.2"></a>
+<FONT color="green">003</FONT>     * contributor license agreements.  See the NOTICE file distributed with<a name="line.3"></a>
+<FONT color="green">004</FONT>     * this work for additional information regarding copyright ownership.<a name="line.4"></a>
+<FONT color="green">005</FONT>     * The ASF licenses this file to You under the Apache License, Version 2.0<a name="line.5"></a>
+<FONT color="green">006</FONT>     * (the "License"); you may not use this file except in compliance with<a name="line.6"></a>
+<FONT color="green">007</FONT>     * the License.  You may obtain a copy of the License at<a name="line.7"></a>
+<FONT color="green">008</FONT>     *<a name="line.8"></a>
+<FONT color="green">009</FONT>     *      http://www.apache.org/licenses/LICENSE-2.0<a name="line.9"></a>
+<FONT color="green">010</FONT>     *<a name="line.10"></a>
+<FONT color="green">011</FONT>     * Unless required by applicable law or agreed to in writing, software<a name="line.11"></a>
+<FONT color="green">012</FONT>     * distributed under the License is distributed on an "AS IS" BASIS,<a name="line.12"></a>
+<FONT color="green">013</FONT>     * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.<a name="line.13"></a>
+<FONT color="green">014</FONT>     * See the License for the specific language governing permissions and<a name="line.14"></a>
+<FONT color="green">015</FONT>     * limitations under the License.<a name="line.15"></a>
+<FONT color="green">016</FONT>     */<a name="line.16"></a>
+<FONT color="green">017</FONT>    package org.apache.commons.math3.geometry.euclidean.threed;<a name="line.17"></a>
+<FONT color="green">018</FONT>    <a name="line.18"></a>
+<FONT color="green">019</FONT>    import org.apache.commons.math3.exception.MathArithmeticException;<a name="line.19"></a>
+<FONT color="green">020</FONT>    import org.apache.commons.math3.exception.util.LocalizedFormats;<a name="line.20"></a>
+<FONT color="green">021</FONT>    import org.apache.commons.math3.geometry.Vector;<a name="line.21"></a>
+<FONT color="green">022</FONT>    import org.apache.commons.math3.geometry.euclidean.oned.Vector1D;<a name="line.22"></a>
+<FONT color="green">023</FONT>    import org.apache.commons.math3.geometry.euclidean.twod.Euclidean2D;<a name="line.23"></a>
+<FONT color="green">024</FONT>    import org.apache.commons.math3.geometry.euclidean.twod.PolygonsSet;<a name="line.24"></a>
+<FONT color="green">025</FONT>    import org.apache.commons.math3.geometry.euclidean.twod.Vector2D;<a name="line.25"></a>
+<FONT color="green">026</FONT>    import org.apache.commons.math3.geometry.partitioning.Embedding;<a name="line.26"></a>
+<FONT color="green">027</FONT>    import org.apache.commons.math3.geometry.partitioning.Hyperplane;<a name="line.27"></a>
+<FONT color="green">028</FONT>    import org.apache.commons.math3.util.FastMath;<a name="line.28"></a>
+<FONT color="green">029</FONT>    <a name="line.29"></a>
+<FONT color="green">030</FONT>    /** The class represent planes in a three dimensional space.<a name="line.30"></a>
+<FONT color="green">031</FONT>     * @version $Id: Plane.java 1416643 2012-12-03 19:37:14Z tn $<a name="line.31"></a>
+<FONT color="green">032</FONT>     * @since 3.0<a name="line.32"></a>
+<FONT color="green">033</FONT>     */<a name="line.33"></a>
+<FONT color="green">034</FONT>    public class Plane implements Hyperplane&lt;Euclidean3D&gt;, Embedding&lt;Euclidean3D, Euclidean2D&gt; {<a name="line.34"></a>
+<FONT color="green">035</FONT>    <a name="line.35"></a>
+<FONT color="green">036</FONT>        /** Offset of the origin with respect to the plane. */<a name="line.36"></a>
+<FONT color="green">037</FONT>        private double originOffset;<a name="line.37"></a>
+<FONT color="green">038</FONT>    <a name="line.38"></a>
+<FONT color="green">039</FONT>        /** Origin of the plane frame. */<a name="line.39"></a>
+<FONT color="green">040</FONT>        private Vector3D origin;<a name="line.40"></a>
+<FONT color="green">041</FONT>    <a name="line.41"></a>
+<FONT color="green">042</FONT>        /** First vector of the plane frame (in plane). */<a name="line.42"></a>
+<FONT color="green">043</FONT>        private Vector3D u;<a name="line.43"></a>
+<FONT color="green">044</FONT>    <a name="line.44"></a>
+<FONT color="green">045</FONT>        /** Second vector of the plane frame (in plane). */<a name="line.45"></a>
+<FONT color="green">046</FONT>        private Vector3D v;<a name="line.46"></a>
+<FONT color="green">047</FONT>    <a name="line.47"></a>
+<FONT color="green">048</FONT>        /** Third vector of the plane frame (plane normal). */<a name="line.48"></a>
+<FONT color="green">049</FONT>        private Vector3D w;<a name="line.49"></a>
+<FONT color="green">050</FONT>    <a name="line.50"></a>
+<FONT color="green">051</FONT>        /** Build a plane normal to a given direction and containing the origin.<a name="line.51"></a>
+<FONT color="green">052</FONT>         * @param normal normal direction to the plane<a name="line.52"></a>
+<FONT color="green">053</FONT>         * @exception MathArithmeticException if the normal norm is too small<a name="line.53"></a>
+<FONT color="green">054</FONT>         */<a name="line.54"></a>
+<FONT color="green">055</FONT>        public Plane(final Vector3D normal) throws MathArithmeticException {<a name="line.55"></a>
+<FONT color="green">056</FONT>            setNormal(normal);<a name="line.56"></a>
+<FONT color="green">057</FONT>            originOffset = 0;<a name="line.57"></a>
+<FONT color="green">058</FONT>            setFrame();<a name="line.58"></a>
+<FONT color="green">059</FONT>        }<a name="line.59"></a>
+<FONT color="green">060</FONT>    <a name="line.60"></a>
+<FONT color="green">061</FONT>        /** Build a plane from a point and a normal.<a name="line.61"></a>
+<FONT color="green">062</FONT>         * @param p point belonging to the plane<a name="line.62"></a>
+<FONT color="green">063</FONT>         * @param normal normal direction to the plane<a name="line.63"></a>
+<FONT color="green">064</FONT>         * @exception MathArithmeticException if the normal norm is too small<a name="line.64"></a>
+<FONT color="green">065</FONT>         */<a name="line.65"></a>
+<FONT color="green">066</FONT>        public Plane(final Vector3D p, final Vector3D normal) throws MathArithmeticException {<a name="line.66"></a>
+<FONT color="green">067</FONT>            setNormal(normal);<a name="line.67"></a>
+<FONT color="green">068</FONT>            originOffset = -p.dotProduct(w);<a name="line.68"></a>
+<FONT color="green">069</FONT>            setFrame();<a name="line.69"></a>
+<FONT color="green">070</FONT>        }<a name="line.70"></a>
+<FONT color="green">071</FONT>    <a name="line.71"></a>
+<FONT color="green">072</FONT>        /** Build a plane from three points.<a name="line.72"></a>
+<FONT color="green">073</FONT>         * &lt;p&gt;The plane is oriented in the direction of<a name="line.73"></a>
+<FONT color="green">074</FONT>         * {@code (p2-p1) ^ (p3-p1)}&lt;/p&gt;<a name="line.74"></a>
+<FONT color="green">075</FONT>         * @param p1 first point belonging to the plane<a name="line.75"></a>
+<FONT color="green">076</FONT>         * @param p2 second point belonging to the plane<a name="line.76"></a>
+<FONT color="green">077</FONT>         * @param p3 third point belonging to the plane<a name="line.77"></a>
+<FONT color="green">078</FONT>         * @exception MathArithmeticException if the points do not constitute a plane<a name="line.78"></a>
+<FONT color="green">079</FONT>         */<a name="line.79"></a>
+<FONT color="green">080</FONT>        public Plane(final Vector3D p1, final Vector3D p2, final Vector3D p3)<a name="line.80"></a>
+<FONT color="green">081</FONT>            throws MathArithmeticException {<a name="line.81"></a>
+<FONT color="green">082</FONT>            this(p1, p2.subtract(p1).crossProduct(p3.subtract(p1)));<a name="line.82"></a>
+<FONT color="green">083</FONT>        }<a name="line.83"></a>
+<FONT color="green">084</FONT>    <a name="line.84"></a>
+<FONT color="green">085</FONT>        /** Copy constructor.<a name="line.85"></a>
+<FONT color="green">086</FONT>         * &lt;p&gt;The instance created is completely independant of the original<a name="line.86"></a>
+<FONT color="green">087</FONT>         * one. A deep copy is used, none of the underlying object are<a name="line.87"></a>
+<FONT color="green">088</FONT>         * shared.&lt;/p&gt;<a name="line.88"></a>
+<FONT color="green">089</FONT>         * @param plane plane to copy<a name="line.89"></a>
+<FONT color="green">090</FONT>         */<a name="line.90"></a>
+<FONT color="green">091</FONT>        public Plane(final Plane plane) {<a name="line.91"></a>
+<FONT color="green">092</FONT>            originOffset = plane.originOffset;<a name="line.92"></a>
+<FONT color="green">093</FONT>            origin = plane.origin;<a name="line.93"></a>
+<FONT color="green">094</FONT>            u      = plane.u;<a name="line.94"></a>
+<FONT color="green">095</FONT>            v      = plane.v;<a name="line.95"></a>
+<FONT color="green">096</FONT>            w      = plane.w;<a name="line.96"></a>
+<FONT color="green">097</FONT>        }<a name="line.97"></a>
+<FONT color="green">098</FONT>    <a name="line.98"></a>
+<FONT color="green">099</FONT>        /** Copy the instance.<a name="line.99"></a>
+<FONT color="green">100</FONT>         * &lt;p&gt;The instance created is completely independant of the original<a name="line.100"></a>
+<FONT color="green">101</FONT>         * one. A deep copy is used, none of the underlying objects are<a name="line.101"></a>
+<FONT color="green">102</FONT>         * shared (except for immutable objects).&lt;/p&gt;<a name="line.102"></a>
+<FONT color="green">103</FONT>         * @return a new hyperplane, copy of the instance<a name="line.103"></a>
+<FONT color="green">104</FONT>         */<a name="line.104"></a>
+<FONT color="green">105</FONT>        public Plane copySelf() {<a name="line.105"></a>
+<FONT color="green">106</FONT>            return new Plane(this);<a name="line.106"></a>
+<FONT color="green">107</FONT>        }<a name="line.107"></a>
+<FONT color="green">108</FONT>    <a name="line.108"></a>
+<FONT color="green">109</FONT>        /** Reset the instance as if built from a point and a normal.<a name="line.109"></a>
+<FONT color="green">110</FONT>         * @param p point belonging to the plane<a name="line.110"></a>
+<FONT color="green">111</FONT>         * @param normal normal direction to the plane<a name="line.111"></a>
+<FONT color="green">112</FONT>         * @exception MathArithmeticException if the normal norm is too small<a name="line.112"></a>
+<FONT color="green">113</FONT>         */<a name="line.113"></a>
+<FONT color="green">114</FONT>        public void reset(final Vector3D p, final Vector3D normal) throws MathArithmeticException {<a name="line.114"></a>
+<FONT color="green">115</FONT>            setNormal(normal);<a name="line.115"></a>
+<FONT color="green">116</FONT>            originOffset = -p.dotProduct(w);<a name="line.116"></a>
+<FONT color="green">117</FONT>            setFrame();<a name="line.117"></a>
+<FONT color="green">118</FONT>        }<a name="line.118"></a>
+<FONT color="green">119</FONT>    <a name="line.119"></a>
+<FONT color="green">120</FONT>        /** Reset the instance from another one.<a name="line.120"></a>
+<FONT color="green">121</FONT>         * &lt;p&gt;The updated instance is completely independant of the original<a name="line.121"></a>
+<FONT color="green">122</FONT>         * one. A deep reset is used none of the underlying object is<a name="line.122"></a>
+<FONT color="green">123</FONT>         * shared.&lt;/p&gt;<a name="line.123"></a>
+<FONT color="green">124</FONT>         * @param original plane to reset from<a name="line.124"></a>
+<FONT color="green">125</FONT>         */<a name="line.125"></a>
+<FONT color="green">126</FONT>        public void reset(final Plane original) {<a name="line.126"></a>
+<FONT color="green">127</FONT>            originOffset = original.originOffset;<a name="line.127"></a>
+<FONT color="green">128</FONT>            origin       = original.origin;<a name="line.128"></a>
+<FONT color="green">129</FONT>            u            = original.u;<a name="line.129"></a>
+<FONT color="green">130</FONT>            v            = original.v;<a name="line.130"></a>
+<FONT color="green">131</FONT>            w            = original.w;<a name="line.131"></a>
+<FONT color="green">132</FONT>        }<a name="line.132"></a>
+<FONT color="green">133</FONT>    <a name="line.133"></a>
+<FONT color="green">134</FONT>        /** Set the normal vactor.<a name="line.134"></a>
+<FONT color="green">135</FONT>         * @param normal normal direction to the plane (will be copied)<a name="line.135"></a>
+<FONT color="green">136</FONT>         * @exception MathArithmeticException if the normal norm is too small<a name="line.136"></a>
+<FONT color="green">137</FONT>         */<a name="line.137"></a>
+<FONT color="green">138</FONT>        private void setNormal(final Vector3D normal) throws MathArithmeticException {<a name="line.138"></a>
+<FONT color="green">139</FONT>            final double norm = normal.getNorm();<a name="line.139"></a>
+<FONT color="green">140</FONT>            if (norm &lt; 1.0e-10) {<a name="line.140"></a>
+<FONT color="green">141</FONT>                throw new MathArithmeticException(LocalizedFormats.ZERO_NORM);<a name="line.141"></a>
+<FONT color="green">142</FONT>            }<a name="line.142"></a>
+<FONT color="green">143</FONT>            w = new Vector3D(1.0 / norm, normal);<a name="line.143"></a>
+<FONT color="green">144</FONT>        }<a name="line.144"></a>
+<FONT color="green">145</FONT>    <a name="line.145"></a>
+<FONT color="green">146</FONT>        /** Reset the plane frame.<a name="line.146"></a>
+<FONT color="green">147</FONT>         */<a name="line.147"></a>
+<FONT color="green">148</FONT>        private void setFrame() {<a name="line.148"></a>
+<FONT color="green">149</FONT>            origin = new Vector3D(-originOffset, w);<a name="line.149"></a>
+<FONT color="green">150</FONT>            u = w.orthogonal();<a name="line.150"></a>
+<FONT color="green">151</FONT>            v = Vector3D.crossProduct(w, u);<a name="line.151"></a>
+<FONT color="green">152</FONT>        }<a name="line.152"></a>
+<FONT color="green">153</FONT>    <a name="line.153"></a>
+<FONT color="green">154</FONT>        /** Get the origin point of the plane frame.<a name="line.154"></a>
+<FONT color="green">155</FONT>         * &lt;p&gt;The point returned is the orthogonal projection of the<a name="line.155"></a>
+<FONT color="green">156</FONT>         * 3D-space origin in the plane.&lt;/p&gt;<a name="line.156"></a>
+<FONT color="green">157</FONT>         * @return the origin point of the plane frame (point closest to the<a name="line.157"></a>
+<FONT color="green">158</FONT>         * 3D-space origin)<a name="line.158"></a>
+<FONT color="green">159</FONT>         */<a name="line.159"></a>
+<FONT color="green">160</FONT>        public Vector3D getOrigin() {<a name="line.160"></a>
+<FONT color="green">161</FONT>            return origin;<a name="line.161"></a>
+<FONT color="green">162</FONT>        }<a name="line.162"></a>
+<FONT color="green">163</FONT>    <a name="line.163"></a>
+<FONT color="green">164</FONT>        /** Get the normalized normal vector.<a name="line.164"></a>
+<FONT color="green">165</FONT>         * &lt;p&gt;The frame defined by ({@link #getU getU}, {@link #getV getV},<a name="line.165"></a>
+<FONT color="green">166</FONT>         * {@link #getNormal getNormal}) is a rigth-handed orthonormalized<a name="line.166"></a>
+<FONT color="green">167</FONT>         * frame).&lt;/p&gt;<a name="line.167"></a>
+<FONT color="green">168</FONT>         * @return normalized normal vector<a name="line.168"></a>
+<FONT color="green">169</FONT>         * @see #getU<a name="line.169"></a>
+<FONT color="green">170</FONT>         * @see #getV<a name="line.170"></a>
+<FONT color="green">171</FONT>         */<a name="line.171"></a>
+<FONT color="green">172</FONT>        public Vector3D getNormal() {<a name="line.172"></a>
+<FONT color="green">173</FONT>            return w;<a name="line.173"></a>
+<FONT color="green">174</FONT>        }<a name="line.174"></a>
+<FONT color="green">175</FONT>    <a name="line.175"></a>
+<FONT color="green">176</FONT>        /** Get the plane first canonical vector.<a name="line.176"></a>
+<FONT color="green">177</FONT>         * &lt;p&gt;The frame defined by ({@link #getU getU}, {@link #getV getV},<a name="line.177"></a>
+<FONT color="green">178</FONT>         * {@link #getNormal getNormal}) is a rigth-handed orthonormalized<a name="line.178"></a>
+<FONT color="green">179</FONT>         * frame).&lt;/p&gt;<a name="line.179"></a>
+<FONT color="green">180</FONT>         * @return normalized first canonical vector<a name="line.180"></a>
+<FONT color="green">181</FONT>         * @see #getV<a name="line.181"></a>
+<FONT color="green">182</FONT>         * @see #getNormal<a name="line.182"></a>
+<FONT color="green">183</FONT>         */<a name="line.183"></a>
+<FONT color="green">184</FONT>        public Vector3D getU() {<a name="line.184"></a>
+<FONT color="green">185</FONT>            return u;<a name="line.185"></a>
+<FONT color="green">186</FONT>        }<a name="line.186"></a>
+<FONT color="green">187</FONT>    <a name="line.187"></a>
+<FONT color="green">188</FONT>        /** Get the plane second canonical vector.<a name="line.188"></a>
+<FONT color="green">189</FONT>         * &lt;p&gt;The frame defined by ({@link #getU getU}, {@link #getV getV},<a name="line.189"></a>
+<FONT color="green">190</FONT>         * {@link #getNormal getNormal}) is a rigth-handed orthonormalized<a name="line.190"></a>
+<FONT color="green">191</FONT>         * frame).&lt;/p&gt;<a name="line.191"></a>
+<FONT color="green">192</FONT>         * @return normalized second canonical vector<a name="line.192"></a>
+<FONT color="green">193</FONT>         * @see #getU<a name="line.193"></a>
+<FONT color="green">194</FONT>         * @see #getNormal<a name="line.194"></a>
+<FONT color="green">195</FONT>         */<a name="line.195"></a>
+<FONT color="green">196</FONT>        public Vector3D getV() {<a name="line.196"></a>
+<FONT color="green">197</FONT>            return v;<a name="line.197"></a>
+<FONT color="green">198</FONT>        }<a name="line.198"></a>
+<FONT color="green">199</FONT>    <a name="line.199"></a>
+<FONT color="green">200</FONT>        /** Revert the plane.<a name="line.200"></a>
+<FONT color="green">201</FONT>         * &lt;p&gt;Replace the instance by a similar plane with opposite orientation.&lt;/p&gt;<a name="line.201"></a>
+<FONT color="green">202</FONT>         * &lt;p&gt;The new plane frame is chosen in such a way that a 3D point that had<a name="line.202"></a>
+<FONT color="green">203</FONT>         * {@code (x, y)} in-plane coordinates and {@code z} offset with<a name="line.203"></a>
+<FONT color="green">204</FONT>         * respect to the plane and is unaffected by the change will have<a name="line.204"></a>
+<FONT color="green">205</FONT>         * {@code (y, x)} in-plane coordinates and {@code -z} offset with<a name="line.205"></a>
+<FONT color="green">206</FONT>         * respect to the new plane. This means that the {@code u} and {@code v}<a name="line.206"></a>
+<FONT color="green">207</FONT>         * vectors returned by the {@link #getU} and {@link #getV} methods are exchanged,<a name="line.207"></a>
+<FONT color="green">208</FONT>         * and the {@code w} vector returned by the {@link #getNormal} method is<a name="line.208"></a>
+<FONT color="green">209</FONT>         * reversed.&lt;/p&gt;<a name="line.209"></a>
+<FONT color="green">210</FONT>         */<a name="line.210"></a>
+<FONT color="green">211</FONT>        public void revertSelf() {<a name="line.211"></a>
+<FONT color="green">212</FONT>            final Vector3D tmp = u;<a name="line.212"></a>
+<FONT color="green">213</FONT>            u = v;<a name="line.213"></a>
+<FONT color="green">214</FONT>            v = tmp;<a name="line.214"></a>
+<FONT color="green">215</FONT>            w = w.negate();<a name="line.215"></a>
+<FONT color="green">216</FONT>            originOffset = -originOffset;<a name="line.216"></a>
+<FONT color="green">217</FONT>        }<a name="line.217"></a>
+<FONT color="green">218</FONT>    <a name="line.218"></a>
+<FONT color="green">219</FONT>        /** Transform a 3D space point into an in-plane point.<a name="line.219"></a>
+<FONT color="green">220</FONT>         * @param point point of the space (must be a {@link Vector3D<a name="line.220"></a>
+<FONT color="green">221</FONT>         * Vector3D} instance)<a name="line.221"></a>
+<FONT color="green">222</FONT>         * @return in-plane point (really a {@link<a name="line.222"></a>
+<FONT color="green">223</FONT>         * org.apache.commons.math3.geometry.euclidean.twod.Vector2D Vector2D} instance)<a name="line.223"></a>
+<FONT color="green">224</FONT>         * @see #toSpace<a name="line.224"></a>
+<FONT color="green">225</FONT>         */<a name="line.225"></a>
+<FONT color="green">226</FONT>        public Vector2D toSubSpace(final Vector&lt;Euclidean3D&gt; point) {<a name="line.226"></a>
+<FONT color="green">227</FONT>            return new Vector2D(point.dotProduct(u), point.dotProduct(v));<a name="line.227"></a>
+<FONT color="green">228</FONT>        }<a name="line.228"></a>
+<FONT color="green">229</FONT>    <a name="line.229"></a>
+<FONT color="green">230</FONT>        /** Transform an in-plane point into a 3D space point.<a name="line.230"></a>
+<FONT color="green">231</FONT>         * @param point in-plane point (must be a {@link<a name="line.231"></a>
+<FONT color="green">232</FONT>         * org.apache.commons.math3.geometry.euclidean.twod.Vector2D Vector2D} instance)<a name="line.232"></a>
+<FONT color="green">233</FONT>         * @return 3D space point (really a {@link Vector3D Vector3D} instance)<a name="line.233"></a>
+<FONT color="green">234</FONT>         * @see #toSubSpace<a name="line.234"></a>
+<FONT color="green">235</FONT>         */<a name="line.235"></a>
+<FONT color="green">236</FONT>        public Vector3D toSpace(final Vector&lt;Euclidean2D&gt; point) {<a name="line.236"></a>
+<FONT color="green">237</FONT>            final Vector2D p2D = (Vector2D) point;<a name="line.237"></a>
+<FONT color="green">238</FONT>            return new Vector3D(p2D.getX(), u, p2D.getY(), v, -originOffset, w);<a name="line.238"></a>
+<FONT color="green">239</FONT>        }<a name="line.239"></a>
+<FONT color="green">240</FONT>    <a name="line.240"></a>
+<FONT color="green">241</FONT>        /** Get one point from the 3D-space.<a name="line.241"></a>
+<FONT color="green">242</FONT>         * @param inPlane desired in-plane coordinates for the point in the<a name="line.242"></a>
+<FONT color="green">243</FONT>         * plane<a name="line.243"></a>
+<FONT color="green">244</FONT>         * @param offset desired offset for the point<a name="line.244"></a>
+<FONT color="green">245</FONT>         * @return one point in the 3D-space, with given coordinates and offset<a name="line.245"></a>
+<FONT color="green">246</FONT>         * relative to the plane<a name="line.246"></a>
+<FONT color="green">247</FONT>         */<a name="line.247"></a>
+<FONT color="green">248</FONT>        public Vector3D getPointAt(final Vector2D inPlane, final double offset) {<a name="line.248"></a>
+<FONT color="green">249</FONT>            return new Vector3D(inPlane.getX(), u, inPlane.getY(), v, offset - originOffset, w);<a name="line.249"></a>
+<FONT color="green">250</FONT>        }<a name="line.250"></a>
+<FONT color="green">251</FONT>    <a name="line.251"></a>
+<FONT color="green">252</FONT>        /** Check if the instance is similar to another plane.<a name="line.252"></a>
+<FONT color="green">253</FONT>         * &lt;p&gt;Planes are considered similar if they contain the same<a name="line.253"></a>
+<FONT color="green">254</FONT>         * points. This does not mean they are equal since they can have<a name="line.254"></a>
+<FONT color="green">255</FONT>         * opposite normals.&lt;/p&gt;<a name="line.255"></a>
+<FONT color="green">256</FONT>         * @param plane plane to which the instance is compared<a name="line.256"></a>
+<FONT color="green">257</FONT>         * @return true if the planes are similar<a name="line.257"></a>
+<FONT color="green">258</FONT>         */<a name="line.258"></a>
+<FONT color="green">259</FONT>        public boolean isSimilarTo(final Plane plane) {<a name="line.259"></a>
+<FONT color="green">260</FONT>            final double angle = Vector3D.angle(w, plane.w);<a name="line.260"></a>
+<FONT color="green">261</FONT>            return ((angle &lt; 1.0e-10) &amp;&amp; (FastMath.abs(originOffset - plane.originOffset) &lt; 1.0e-10)) ||<a name="line.261"></a>
+<FONT color="green">262</FONT>                   ((angle &gt; (FastMath.PI - 1.0e-10)) &amp;&amp; (FastMath.abs(originOffset + plane.originOffset) &lt; 1.0e-10));<a name="line.262"></a>
+<FONT color="green">263</FONT>        }<a name="line.263"></a>
+<FONT color="green">264</FONT>    <a name="line.264"></a>
+<FONT color="green">265</FONT>        /** Rotate the plane around the specified point.<a name="line.265"></a>
+<FONT color="green">266</FONT>         * &lt;p&gt;The instance is not modified, a new instance is created.&lt;/p&gt;<a name="line.266"></a>
+<FONT color="green">267</FONT>         * @param center rotation center<a name="line.267"></a>
+<FONT color="green">268</FONT>         * @param rotation vectorial rotation operator<a name="line.268"></a>
+<FONT color="green">269</FONT>         * @return a new plane<a name="line.269"></a>
+<FONT color="green">270</FONT>         */<a name="line.270"></a>
+<FONT color="green">271</FONT>        public Plane rotate(final Vector3D center, final Rotation rotation) {<a name="line.271"></a>
+<FONT color="green">272</FONT>    <a name="line.272"></a>
+<FONT color="green">273</FONT>            final Vector3D delta = origin.subtract(center);<a name="line.273"></a>
+<FONT color="green">274</FONT>            final Plane plane = new Plane(center.add(rotation.applyTo(delta)),<a name="line.274"></a>
+<FONT color="green">275</FONT>                                          rotation.applyTo(w));<a name="line.275"></a>
+<FONT color="green">276</FONT>    <a name="line.276"></a>
+<FONT color="green">277</FONT>            // make sure the frame is transformed as desired<a name="line.277"></a>
+<FONT color="green">278</FONT>            plane.u = rotation.applyTo(u);<a name="line.278"></a>
+<FONT color="green">279</FONT>            plane.v = rotation.applyTo(v);<a name="line.279"></a>
+<FONT color="green">280</FONT>    <a name="line.280"></a>
+<FONT color="green">281</FONT>            return plane;<a name="line.281"></a>
+<FONT color="green">282</FONT>    <a name="line.282"></a>
+<FONT color="green">283</FONT>        }<a name="line.283"></a>
+<FONT color="green">284</FONT>    <a name="line.284"></a>
+<FONT color="green">285</FONT>        /** Translate the plane by the specified amount.<a name="line.285"></a>
+<FONT color="green">286</FONT>         * &lt;p&gt;The instance is not modified, a new instance is created.&lt;/p&gt;<a name="line.286"></a>
+<FONT color="green">287</FONT>         * @param translation translation to apply<a name="line.287"></a>
+<FONT color="green">288</FONT>         * @return a new plane<a name="line.288"></a>
+<FONT color="green">289</FONT>         */<a name="line.289"></a>
+<FONT color="green">290</FONT>        public Plane translate(final Vector3D translation) {<a name="line.290"></a>
+<FONT color="green">291</FONT>    <a name="line.291"></a>
+<FONT color="green">292</FONT>            final Plane plane = new Plane(origin.add(translation), w);<a name="line.292"></a>
+<FONT color="green">293</FONT>    <a name="line.293"></a>
+<FONT color="green">294</FONT>            // make sure the frame is transformed as desired<a name="line.294"></a>
+<FONT color="green">295</FONT>            plane.u = u;<a name="line.295"></a>
+<FONT color="green">296</FONT>            plane.v = v;<a name="line.296"></a>
+<FONT color="green">297</FONT>    <a name="line.297"></a>
+<FONT color="green">298</FONT>            return plane;<a name="line.298"></a>
+<FONT color="green">299</FONT>    <a name="line.299"></a>
+<FONT color="green">300</FONT>        }<a name="line.300"></a>
+<FONT color="green">301</FONT>    <a name="line.301"></a>
+<FONT color="green">302</FONT>        /** Get the intersection of a line with the instance.<a name="line.302"></a>
+<FONT color="green">303</FONT>         * @param line line intersecting the instance<a name="line.303"></a>
+<FONT color="green">304</FONT>         * @return intersection point between between the line and the<a name="line.304"></a>
+<FONT color="green">305</FONT>         * instance (null if the line is parallel to the instance)<a name="line.305"></a>
+<FONT color="green">306</FONT>         */<a name="line.306"></a>
+<FONT color="green">307</FONT>        public Vector3D intersection(final Line line) {<a name="line.307"></a>
+<FONT color="green">308</FONT>            final Vector3D direction = line.getDirection();<a name="line.308"></a>
+<FONT color="green">309</FONT>            final double   dot       = w.dotProduct(direction);<a name="line.309"></a>
+<FONT color="green">310</FONT>            if (FastMath.abs(dot) &lt; 1.0e-10) {<a name="line.310"></a>
+<FONT color="green">311</FONT>                return null;<a name="line.311"></a>
+<FONT color="green">312</FONT>            }<a name="line.312"></a>
+<FONT color="green">313</FONT>            final Vector3D point = line.toSpace(Vector1D.ZERO);<a name="line.313"></a>
+<FONT color="green">314</FONT>            final double   k     = -(originOffset + w.dotProduct(point)) / dot;<a name="line.314"></a>
+<FONT color="green">315</FONT>            return new Vector3D(1.0, point, k, direction);<a name="line.315"></a>
+<FONT color="green">316</FONT>        }<a name="line.316"></a>
+<FONT color="green">317</FONT>    <a name="line.317"></a>
+<FONT color="green">318</FONT>        /** Build the line shared by the instance and another plane.<a name="line.318"></a>
+<FONT color="green">319</FONT>         * @param other other plane<a name="line.319"></a>
+<FONT color="green">320</FONT>         * @return line at the intersection of the instance and the<a name="line.320"></a>
+<FONT color="green">321</FONT>         * other plane (really a {@link Line Line} instance)<a name="line.321"></a>
+<FONT color="green">322</FONT>         */<a name="line.322"></a>
+<FONT color="green">323</FONT>        public Line intersection(final Plane other) {<a name="line.323"></a>
+<FONT color="green">324</FONT>            final Vector3D direction = Vector3D.crossProduct(w, other.w);<a name="line.324"></a>
+<FONT color="green">325</FONT>            if (direction.getNorm() &lt; 1.0e-10) {<a name="line.325"></a>
+<FONT color="green">326</FONT>                return null;<a name="line.326"></a>
+<FONT color="green">327</FONT>            }<a name="line.327"></a>
+<FONT color="green">328</FONT>            final Vector3D point = intersection(this, other, new Plane(direction));<a name="line.328"></a>
+<FONT color="green">329</FONT>            return new Line(point, point.add(direction));<a name="line.329"></a>
+<FONT color="green">330</FONT>        }<a name="line.330"></a>
+<FONT color="green">331</FONT>    <a name="line.331"></a>
+<FONT color="green">332</FONT>        /** Get the intersection point of three planes.<a name="line.332"></a>
+<FONT color="green">333</FONT>         * @param plane1 first plane1<a name="line.333"></a>
+<FONT color="green">334</FONT>         * @param plane2 second plane2<a name="line.334"></a>
+<FONT color="green">335</FONT>         * @param plane3 third plane2<a name="line.335"></a>
+<FONT color="green">336</FONT>         * @return intersection point of three planes, null if some planes are parallel<a name="line.336"></a>
+<FONT color="green">337</FONT>         */<a name="line.337"></a>
+<FONT color="green">338</FONT>        public static Vector3D intersection(final Plane plane1, final Plane plane2, final Plane plane3) {<a name="line.338"></a>
+<FONT color="green">339</FONT>    <a name="line.339"></a>
+<FONT color="green">340</FONT>            // coefficients of the three planes linear equations<a name="line.340"></a>
+<FONT color="green">341</FONT>            final double a1 = plane1.w.getX();<a name="line.341"></a>
+<FONT color="green">342</FONT>            final double b1 = plane1.w.getY();<a name="line.342"></a>
+<FONT color="green">343</FONT>            final double c1 = plane1.w.getZ();<a name="line.343"></a>
+<FONT color="green">344</FONT>            final double d1 = plane1.originOffset;<a name="line.344"></a>
+<FONT color="green">345</FONT>    <a name="line.345"></a>
+<FONT color="green">346</FONT>            final double a2 = plane2.w.getX();<a name="line.346"></a>
+<FONT color="green">347</FONT>            final double b2 = plane2.w.getY();<a name="line.347"></a>
+<FONT color="green">348</FONT>            final double c2 = plane2.w.getZ();<a name="line.348"></a>
+<FONT color="green">349</FONT>            final double d2 = plane2.originOffset;<a name="line.349"></a>
+<FONT color="green">350</FONT>    <a name="line.350"></a>
+<FONT color="green">351</FONT>            final double a3 = plane3.w.getX();<a name="line.351"></a>
+<FONT color="green">352</FONT>            final double b3 = plane3.w.getY();<a name="line.352"></a>
+<FONT color="green">353</FONT>            final double c3 = plane3.w.getZ();<a name="line.353"></a>
+<FONT color="green">354</FONT>            final double d3 = plane3.originOffset;<a name="line.354"></a>
+<FONT color="green">355</FONT>    <a name="line.355"></a>
+<FONT color="green">356</FONT>            // direct Cramer resolution of the linear system<a name="line.356"></a>
+<FONT color="green">357</FONT>            // (this is still feasible for a 3x3 system)<a name="line.357"></a>
+<FONT color="green">358</FONT>            final double a23         = b2 * c3 - b3 * c2;<a name="line.358"></a>
+<FONT color="green">359</FONT>            final double b23         = c2 * a3 - c3 * a2;<a name="line.359"></a>
+<FONT color="green">360</FONT>            final double c23         = a2 * b3 - a3 * b2;<a name="line.360"></a>
+<FONT color="green">361</FONT>            final double determinant = a1 * a23 + b1 * b23 + c1 * c23;<a name="line.361"></a>
+<FONT color="green">362</FONT>            if (FastMath.abs(determinant) &lt; 1.0e-10) {<a name="line.362"></a>
+<FONT color="green">363</FONT>                return null;<a name="line.363"></a>
+<FONT color="green">364</FONT>            }<a name="line.364"></a>
+<FONT color="green">365</FONT>    <a name="line.365"></a>
+<FONT color="green">366</FONT>            final double r = 1.0 / determinant;<a name="line.366"></a>
+<FONT color="green">367</FONT>            return new Vector3D(<a name="line.367"></a>
+<FONT color="green">368</FONT>                                (-a23 * d1 - (c1 * b3 - c3 * b1) * d2 - (c2 * b1 - c1 * b2) * d3) * r,<a name="line.368"></a>
+<FONT color="green">369</FONT>                                (-b23 * d1 - (c3 * a1 - c1 * a3) * d2 - (c1 * a2 - c2 * a1) * d3) * r,<a name="line.369"></a>
+<FONT color="green">370</FONT>                                (-c23 * d1 - (b1 * a3 - b3 * a1) * d2 - (b2 * a1 - b1 * a2) * d3) * r);<a name="line.370"></a>
+<FONT color="green">371</FONT>    <a name="line.371"></a>
+<FONT color="green">372</FONT>        }<a name="line.372"></a>
+<FONT color="green">373</FONT>    <a name="line.373"></a>
+<FONT color="green">374</FONT>        /** Build a region covering the whole hyperplane.<a name="line.374"></a>
+<FONT color="green">375</FONT>         * @return a region covering the whole hyperplane<a name="line.375"></a>
+<FONT color="green">376</FONT>         */<a name="line.376"></a>
+<FONT color="green">377</FONT>        public SubPlane wholeHyperplane() {<a name="line.377"></a>
+<FONT color="green">378</FONT>            return new SubPlane(this, new PolygonsSet());<a name="line.378"></a>
+<FONT color="green">379</FONT>        }<a name="line.379"></a>
+<FONT color="green">380</FONT>    <a name="line.380"></a>
+<FONT color="green">381</FONT>        /** Build a region covering the whole space.<a name="line.381"></a>
+<FONT color="green">382</FONT>         * @return a region containing the instance (really a {@link<a name="line.382"></a>
+<FONT color="green">383</FONT>         * PolyhedronsSet PolyhedronsSet} instance)<a name="line.383"></a>
+<FONT color="green">384</FONT>         */<a name="line.384"></a>
+<FONT color="green">385</FONT>        public PolyhedronsSet wholeSpace() {<a name="line.385"></a>
+<FONT color="green">386</FONT>            return new PolyhedronsSet();<a name="line.386"></a>
+<FONT color="green">387</FONT>        }<a name="line.387"></a>
+<FONT color="green">388</FONT>    <a name="line.388"></a>
+<FONT color="green">389</FONT>        /** Check if the instance contains a point.<a name="line.389"></a>
+<FONT color="green">390</FONT>         * @param p point to check<a name="line.390"></a>
+<FONT color="green">391</FONT>         * @return true if p belongs to the plane<a name="line.391"></a>
+<FONT color="green">392</FONT>         */<a name="line.392"></a>
+<FONT color="green">393</FONT>        public boolean contains(final Vector3D p) {<a name="line.393"></a>
+<FONT color="green">394</FONT>            return FastMath.abs(getOffset(p)) &lt; 1.0e-10;<a name="line.394"></a>
+<FONT color="green">395</FONT>        }<a name="line.395"></a>
+<FONT color="green">396</FONT>    <a name="line.396"></a>
+<FONT color="green">397</FONT>        /** Get the offset (oriented distance) of a parallel plane.<a name="line.397"></a>
+<FONT color="green">398</FONT>         * &lt;p&gt;This method should be called only for parallel planes otherwise<a name="line.398"></a>
+<FONT color="green">399</FONT>         * the result is not meaningful.&lt;/p&gt;<a name="line.399"></a>
+<FONT color="green">400</FONT>         * &lt;p&gt;The offset is 0 if both planes are the same, it is<a name="line.400"></a>
+<FONT color="green">401</FONT>         * positive if the plane is on the plus side of the instance and<a name="line.401"></a>
+<FONT color="green">402</FONT>         * negative if it is on the minus side, according to its natural<a name="line.402"></a>
+<FONT color="green">403</FONT>         * orientation.&lt;/p&gt;<a name="line.403"></a>
+<FONT color="green">404</FONT>         * @param plane plane to check<a name="line.404"></a>
+<FONT color="green">405</FONT>         * @return offset of the plane<a name="line.405"></a>
+<FONT color="green">406</FONT>         */<a name="line.406"></a>
+<FONT color="green">407</FONT>        public double getOffset(final Plane plane) {<a name="line.407"></a>
+<FONT color="green">408</FONT>            return originOffset + (sameOrientationAs(plane) ? -plane.originOffset : plane.originOffset);<a name="line.408"></a>
+<FONT color="green">409</FONT>        }<a name="line.409"></a>
+<FONT color="green">410</FONT>    <a name="line.410"></a>
+<FONT color="green">411</FONT>        /** Get the offset (oriented distance) of a point.<a name="line.411"></a>
+<FONT color="green">412</FONT>         * &lt;p&gt;The offset is 0 if the point is on the underlying hyperplane,<a name="line.412"></a>
+<FONT color="green">413</FONT>         * it is positive if the point is on one particular side of the<a name="line.413"></a>
+<FONT color="green">414</FONT>         * hyperplane, and it is negative if the point is on the other side,<a name="line.414"></a>
+<FONT color="green">415</FONT>         * according to the hyperplane natural orientation.&lt;/p&gt;<a name="line.415"></a>
+<FONT color="green">416</FONT>         * @param point point to check<a name="line.416"></a>
+<FONT color="green">417</FONT>         * @return offset of the point<a name="line.417"></a>
+<FONT color="green">418</FONT>         */<a name="line.418"></a>
+<FONT color="green">419</FONT>        public double getOffset(final Vector&lt;Euclidean3D&gt; point) {<a name="line.419"></a>
+<FONT color="green">420</FONT>            return point.dotProduct(w) + originOffset;<a name="line.420"></a>
+<FONT color="green">421</FONT>        }<a name="line.421"></a>
+<FONT color="green">422</FONT>    <a name="line.422"></a>
+<FONT color="green">423</FONT>        /** Check if the instance has the same orientation as another hyperplane.<a name="line.423"></a>
+<FONT color="green">424</FONT>         * @param other other hyperplane to check against the instance<a name="line.424"></a>
+<FONT color="green">425</FONT>         * @return true if the instance and the other hyperplane have<a name="line.425"></a>
+<FONT color="green">426</FONT>         * the same orientation<a name="line.426"></a>
+<FONT color="green">427</FONT>         */<a name="line.427"></a>
+<FONT color="green">428</FONT>        public boolean sameOrientationAs(final Hyperplane&lt;Euclidean3D&gt; other) {<a name="line.428"></a>
+<FONT color="green">429</FONT>            return (((Plane) other).w).dotProduct(w) &gt; 0.0;<a name="line.429"></a>
+<FONT color="green">430</FONT>        }<a name="line.430"></a>
+<FONT color="green">431</FONT>    <a name="line.431"></a>
+<FONT color="green">432</FONT>    }<a name="line.432"></a>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</PRE>
+</BODY>
+</HTML>

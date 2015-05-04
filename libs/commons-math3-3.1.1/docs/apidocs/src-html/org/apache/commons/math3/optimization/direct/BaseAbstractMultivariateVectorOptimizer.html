@@ -1,0 +1,436 @@
+<HTML>
+<BODY BGCOLOR="white">
+<PRE>
+<FONT color="green">001</FONT>    /*<a name="line.1"></a>
+<FONT color="green">002</FONT>     * Licensed to the Apache Software Foundation (ASF) under one or more<a name="line.2"></a>
+<FONT color="green">003</FONT>     * contributor license agreements.  See the NOTICE file distributed with<a name="line.3"></a>
+<FONT color="green">004</FONT>     * this work for additional information regarding copyright ownership.<a name="line.4"></a>
+<FONT color="green">005</FONT>     * The ASF licenses this file to You under the Apache License, Version 2.0<a name="line.5"></a>
+<FONT color="green">006</FONT>     * (the "License"); you may not use this file except in compliance with<a name="line.6"></a>
+<FONT color="green">007</FONT>     * the License.  You may obtain a copy of the License at<a name="line.7"></a>
+<FONT color="green">008</FONT>     *<a name="line.8"></a>
+<FONT color="green">009</FONT>     *      http://www.apache.org/licenses/LICENSE-2.0<a name="line.9"></a>
+<FONT color="green">010</FONT>     *<a name="line.10"></a>
+<FONT color="green">011</FONT>     * Unless required by applicable law or agreed to in writing, software<a name="line.11"></a>
+<FONT color="green">012</FONT>     * distributed under the License is distributed on an "AS IS" BASIS,<a name="line.12"></a>
+<FONT color="green">013</FONT>     * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.<a name="line.13"></a>
+<FONT color="green">014</FONT>     * See the License for the specific language governing permissions and<a name="line.14"></a>
+<FONT color="green">015</FONT>     * limitations under the License.<a name="line.15"></a>
+<FONT color="green">016</FONT>     */<a name="line.16"></a>
+<FONT color="green">017</FONT>    <a name="line.17"></a>
+<FONT color="green">018</FONT>    package org.apache.commons.math3.optimization.direct;<a name="line.18"></a>
+<FONT color="green">019</FONT>    <a name="line.19"></a>
+<FONT color="green">020</FONT>    import org.apache.commons.math3.util.Incrementor;<a name="line.20"></a>
+<FONT color="green">021</FONT>    import org.apache.commons.math3.exception.MaxCountExceededException;<a name="line.21"></a>
+<FONT color="green">022</FONT>    import org.apache.commons.math3.exception.TooManyEvaluationsException;<a name="line.22"></a>
+<FONT color="green">023</FONT>    import org.apache.commons.math3.exception.DimensionMismatchException;<a name="line.23"></a>
+<FONT color="green">024</FONT>    import org.apache.commons.math3.exception.NullArgumentException;<a name="line.24"></a>
+<FONT color="green">025</FONT>    import org.apache.commons.math3.analysis.MultivariateVectorFunction;<a name="line.25"></a>
+<FONT color="green">026</FONT>    import org.apache.commons.math3.optimization.OptimizationData;<a name="line.26"></a>
+<FONT color="green">027</FONT>    import org.apache.commons.math3.optimization.InitialGuess;<a name="line.27"></a>
+<FONT color="green">028</FONT>    import org.apache.commons.math3.optimization.Target;<a name="line.28"></a>
+<FONT color="green">029</FONT>    import org.apache.commons.math3.optimization.Weight;<a name="line.29"></a>
+<FONT color="green">030</FONT>    import org.apache.commons.math3.optimization.BaseMultivariateVectorOptimizer;<a name="line.30"></a>
+<FONT color="green">031</FONT>    import org.apache.commons.math3.optimization.ConvergenceChecker;<a name="line.31"></a>
+<FONT color="green">032</FONT>    import org.apache.commons.math3.optimization.PointVectorValuePair;<a name="line.32"></a>
+<FONT color="green">033</FONT>    import org.apache.commons.math3.optimization.SimpleVectorValueChecker;<a name="line.33"></a>
+<FONT color="green">034</FONT>    import org.apache.commons.math3.linear.RealMatrix;<a name="line.34"></a>
+<FONT color="green">035</FONT>    <a name="line.35"></a>
+<FONT color="green">036</FONT>    /**<a name="line.36"></a>
+<FONT color="green">037</FONT>     * Base class for implementing optimizers for multivariate scalar functions.<a name="line.37"></a>
+<FONT color="green">038</FONT>     * This base class handles the boiler-plate methods associated to thresholds<a name="line.38"></a>
+<FONT color="green">039</FONT>     * settings, iterations and evaluations counting.<a name="line.39"></a>
+<FONT color="green">040</FONT>     *<a name="line.40"></a>
+<FONT color="green">041</FONT>     * @param &lt;FUNC&gt; the type of the objective function to be optimized<a name="line.41"></a>
+<FONT color="green">042</FONT>     *<a name="line.42"></a>
+<FONT color="green">043</FONT>     * @version $Id: BaseAbstractMultivariateVectorOptimizer.java 1422230 2012-12-15 12:11:13Z erans $<a name="line.43"></a>
+<FONT color="green">044</FONT>     * @deprecated As of 3.1 (to be removed in 4.0).<a name="line.44"></a>
+<FONT color="green">045</FONT>     * @since 3.0<a name="line.45"></a>
+<FONT color="green">046</FONT>     */<a name="line.46"></a>
+<FONT color="green">047</FONT>    @Deprecated<a name="line.47"></a>
+<FONT color="green">048</FONT>    public abstract class BaseAbstractMultivariateVectorOptimizer&lt;FUNC extends MultivariateVectorFunction&gt;<a name="line.48"></a>
+<FONT color="green">049</FONT>        implements BaseMultivariateVectorOptimizer&lt;FUNC&gt; {<a name="line.49"></a>
+<FONT color="green">050</FONT>        /** Evaluations counter. */<a name="line.50"></a>
+<FONT color="green">051</FONT>        protected final Incrementor evaluations = new Incrementor();<a name="line.51"></a>
+<FONT color="green">052</FONT>        /** Convergence checker. */<a name="line.52"></a>
+<FONT color="green">053</FONT>        private ConvergenceChecker&lt;PointVectorValuePair&gt; checker;<a name="line.53"></a>
+<FONT color="green">054</FONT>        /** Target value for the objective functions at optimum. */<a name="line.54"></a>
+<FONT color="green">055</FONT>        private double[] target;<a name="line.55"></a>
+<FONT color="green">056</FONT>        /** Weight matrix. */<a name="line.56"></a>
+<FONT color="green">057</FONT>        private RealMatrix weightMatrix;<a name="line.57"></a>
+<FONT color="green">058</FONT>        /** Weight for the least squares cost computation.<a name="line.58"></a>
+<FONT color="green">059</FONT>         * @deprecated<a name="line.59"></a>
+<FONT color="green">060</FONT>         */<a name="line.60"></a>
+<FONT color="green">061</FONT>        private double[] weight;<a name="line.61"></a>
+<FONT color="green">062</FONT>        /** Initial guess. */<a name="line.62"></a>
+<FONT color="green">063</FONT>        private double[] start;<a name="line.63"></a>
+<FONT color="green">064</FONT>        /** Objective function. */<a name="line.64"></a>
+<FONT color="green">065</FONT>        private FUNC function;<a name="line.65"></a>
+<FONT color="green">066</FONT>    <a name="line.66"></a>
+<FONT color="green">067</FONT>        /**<a name="line.67"></a>
+<FONT color="green">068</FONT>         * Simple constructor with default settings.<a name="line.68"></a>
+<FONT color="green">069</FONT>         * The convergence check is set to a {@link SimpleVectorValueChecker}.<a name="line.69"></a>
+<FONT color="green">070</FONT>         * @deprecated See {@link SimpleVectorValueChecker#SimpleVectorValueChecker()}<a name="line.70"></a>
+<FONT color="green">071</FONT>         */<a name="line.71"></a>
+<FONT color="green">072</FONT>        @Deprecated<a name="line.72"></a>
+<FONT color="green">073</FONT>        protected BaseAbstractMultivariateVectorOptimizer() {<a name="line.73"></a>
+<FONT color="green">074</FONT>            this(new SimpleVectorValueChecker());<a name="line.74"></a>
+<FONT color="green">075</FONT>        }<a name="line.75"></a>
+<FONT color="green">076</FONT>        /**<a name="line.76"></a>
+<FONT color="green">077</FONT>         * @param checker Convergence checker.<a name="line.77"></a>
+<FONT color="green">078</FONT>         */<a name="line.78"></a>
+<FONT color="green">079</FONT>        protected BaseAbstractMultivariateVectorOptimizer(ConvergenceChecker&lt;PointVectorValuePair&gt; checker) {<a name="line.79"></a>
+<FONT color="green">080</FONT>            this.checker = checker;<a name="line.80"></a>
+<FONT color="green">081</FONT>        }<a name="line.81"></a>
+<FONT color="green">082</FONT>    <a name="line.82"></a>
+<FONT color="green">083</FONT>        /** {@inheritDoc} */<a name="line.83"></a>
+<FONT color="green">084</FONT>        public int getMaxEvaluations() {<a name="line.84"></a>
+<FONT color="green">085</FONT>            return evaluations.getMaximalCount();<a name="line.85"></a>
+<FONT color="green">086</FONT>        }<a name="line.86"></a>
+<FONT color="green">087</FONT>    <a name="line.87"></a>
+<FONT color="green">088</FONT>        /** {@inheritDoc} */<a name="line.88"></a>
+<FONT color="green">089</FONT>        public int getEvaluations() {<a name="line.89"></a>
+<FONT color="green">090</FONT>            return evaluations.getCount();<a name="line.90"></a>
+<FONT color="green">091</FONT>        }<a name="line.91"></a>
+<FONT color="green">092</FONT>    <a name="line.92"></a>
+<FONT color="green">093</FONT>        /** {@inheritDoc} */<a name="line.93"></a>
+<FONT color="green">094</FONT>        public ConvergenceChecker&lt;PointVectorValuePair&gt; getConvergenceChecker() {<a name="line.94"></a>
+<FONT color="green">095</FONT>            return checker;<a name="line.95"></a>
+<FONT color="green">096</FONT>        }<a name="line.96"></a>
+<FONT color="green">097</FONT>    <a name="line.97"></a>
+<FONT color="green">098</FONT>        /**<a name="line.98"></a>
+<FONT color="green">099</FONT>         * Compute the objective function value.<a name="line.99"></a>
+<FONT color="green">100</FONT>         *<a name="line.100"></a>
+<FONT color="green">101</FONT>         * @param point Point at which the objective function must be evaluated.<a name="line.101"></a>
+<FONT color="green">102</FONT>         * @return the objective function value at the specified point.<a name="line.102"></a>
+<FONT color="green">103</FONT>         * @throws TooManyEvaluationsException if the maximal number of evaluations is<a name="line.103"></a>
+<FONT color="green">104</FONT>         * exceeded.<a name="line.104"></a>
+<FONT color="green">105</FONT>         */<a name="line.105"></a>
+<FONT color="green">106</FONT>        protected double[] computeObjectiveValue(double[] point) {<a name="line.106"></a>
+<FONT color="green">107</FONT>            try {<a name="line.107"></a>
+<FONT color="green">108</FONT>                evaluations.incrementCount();<a name="line.108"></a>
+<FONT color="green">109</FONT>            } catch (MaxCountExceededException e) {<a name="line.109"></a>
+<FONT color="green">110</FONT>                throw new TooManyEvaluationsException(e.getMax());<a name="line.110"></a>
+<FONT color="green">111</FONT>            }<a name="line.111"></a>
+<FONT color="green">112</FONT>            return function.value(point);<a name="line.112"></a>
+<FONT color="green">113</FONT>        }<a name="line.113"></a>
+<FONT color="green">114</FONT>    <a name="line.114"></a>
+<FONT color="green">115</FONT>        /** {@inheritDoc}<a name="line.115"></a>
+<FONT color="green">116</FONT>         *<a name="line.116"></a>
+<FONT color="green">117</FONT>         * @deprecated As of 3.1. Please use<a name="line.117"></a>
+<FONT color="green">118</FONT>         * {@link #optimize(int,MultivariateVectorFunction,OptimizationData[])}<a name="line.118"></a>
+<FONT color="green">119</FONT>         * instead.<a name="line.119"></a>
+<FONT color="green">120</FONT>         */<a name="line.120"></a>
+<FONT color="green">121</FONT>        @Deprecated<a name="line.121"></a>
+<FONT color="green">122</FONT>        public PointVectorValuePair optimize(int maxEval, FUNC f, double[] t, double[] w,<a name="line.122"></a>
+<FONT color="green">123</FONT>                                             double[] startPoint) {<a name="line.123"></a>
+<FONT color="green">124</FONT>            return optimizeInternal(maxEval, f, t, w, startPoint);<a name="line.124"></a>
+<FONT color="green">125</FONT>        }<a name="line.125"></a>
+<FONT color="green">126</FONT>    <a name="line.126"></a>
+<FONT color="green">127</FONT>        /**<a name="line.127"></a>
+<FONT color="green">128</FONT>         * Optimize an objective function.<a name="line.128"></a>
+<FONT color="green">129</FONT>         *<a name="line.129"></a>
+<FONT color="green">130</FONT>         * @param maxEval Allowed number of evaluations of the objective function.<a name="line.130"></a>
+<FONT color="green">131</FONT>         * @param f Objective function.<a name="line.131"></a>
+<FONT color="green">132</FONT>         * @param optData Optimization data. The following data will be looked for:<a name="line.132"></a>
+<FONT color="green">133</FONT>         * &lt;ul&gt;<a name="line.133"></a>
+<FONT color="green">134</FONT>         *  &lt;li&gt;{@link Target}&lt;/li&gt;<a name="line.134"></a>
+<FONT color="green">135</FONT>         *  &lt;li&gt;{@link Weight}&lt;/li&gt;<a name="line.135"></a>
+<FONT color="green">136</FONT>         *  &lt;li&gt;{@link InitialGuess}&lt;/li&gt;<a name="line.136"></a>
+<FONT color="green">137</FONT>         * &lt;/ul&gt;<a name="line.137"></a>
+<FONT color="green">138</FONT>         * @return the point/value pair giving the optimal value of the objective<a name="line.138"></a>
+<FONT color="green">139</FONT>         * function.<a name="line.139"></a>
+<FONT color="green">140</FONT>         * @throws TooManyEvaluationsException if the maximal number of<a name="line.140"></a>
+<FONT color="green">141</FONT>         * evaluations is exceeded.<a name="line.141"></a>
+<FONT color="green">142</FONT>         * @throws DimensionMismatchException if the initial guess, target, and weight<a name="line.142"></a>
+<FONT color="green">143</FONT>         * arguments have inconsistent dimensions.<a name="line.143"></a>
+<FONT color="green">144</FONT>         *<a name="line.144"></a>
+<FONT color="green">145</FONT>         * @since 3.1<a name="line.145"></a>
+<FONT color="green">146</FONT>         */<a name="line.146"></a>
+<FONT color="green">147</FONT>        protected PointVectorValuePair optimize(int maxEval,<a name="line.147"></a>
+<FONT color="green">148</FONT>                                                FUNC f,<a name="line.148"></a>
+<FONT color="green">149</FONT>                                                OptimizationData... optData)<a name="line.149"></a>
+<FONT color="green">150</FONT>            throws TooManyEvaluationsException,<a name="line.150"></a>
+<FONT color="green">151</FONT>                   DimensionMismatchException {<a name="line.151"></a>
+<FONT color="green">152</FONT>            return optimizeInternal(maxEval, f, optData);<a name="line.152"></a>
+<FONT color="green">153</FONT>        }<a name="line.153"></a>
+<FONT color="green">154</FONT>    <a name="line.154"></a>
+<FONT color="green">155</FONT>        /**<a name="line.155"></a>
+<FONT color="green">156</FONT>         * Optimize an objective function.<a name="line.156"></a>
+<FONT color="green">157</FONT>         * Optimization is considered to be a weighted least-squares minimization.<a name="line.157"></a>
+<FONT color="green">158</FONT>         * The cost function to be minimized is<a name="line.158"></a>
+<FONT color="green">159</FONT>         * &lt;code&gt;&amp;sum;weight&lt;sub&gt;i&lt;/sub&gt;(objective&lt;sub&gt;i&lt;/sub&gt; - target&lt;sub&gt;i&lt;/sub&gt;)&lt;sup&gt;2&lt;/sup&gt;&lt;/code&gt;<a name="line.159"></a>
+<FONT color="green">160</FONT>         *<a name="line.160"></a>
+<FONT color="green">161</FONT>         * @param f Objective function.<a name="line.161"></a>
+<FONT color="green">162</FONT>         * @param t Target value for the objective functions at optimum.<a name="line.162"></a>
+<FONT color="green">163</FONT>         * @param w Weights for the least squares cost computation.<a name="line.163"></a>
+<FONT color="green">164</FONT>         * @param startPoint Start point for optimization.<a name="line.164"></a>
+<FONT color="green">165</FONT>         * @return the point/value pair giving the optimal value for objective<a name="line.165"></a>
+<FONT color="green">166</FONT>         * function.<a name="line.166"></a>
+<FONT color="green">167</FONT>         * @param maxEval Maximum number of function evaluations.<a name="line.167"></a>
+<FONT color="green">168</FONT>         * @throws org.apache.commons.math3.exception.DimensionMismatchException<a name="line.168"></a>
+<FONT color="green">169</FONT>         * if the start point dimension is wrong.<a name="line.169"></a>
+<FONT color="green">170</FONT>         * @throws org.apache.commons.math3.exception.TooManyEvaluationsException<a name="line.170"></a>
+<FONT color="green">171</FONT>         * if the maximal number of evaluations is exceeded.<a name="line.171"></a>
+<FONT color="green">172</FONT>         * @throws org.apache.commons.math3.exception.NullArgumentException if<a name="line.172"></a>
+<FONT color="green">173</FONT>         * any argument is {@code null}.<a name="line.173"></a>
+<FONT color="green">174</FONT>         * @deprecated As of 3.1. Please use<a name="line.174"></a>
+<FONT color="green">175</FONT>         * {@link #optimizeInternal(int,MultivariateVectorFunction,OptimizationData[])}<a name="line.175"></a>
+<FONT color="green">176</FONT>         * instead.<a name="line.176"></a>
+<FONT color="green">177</FONT>         */<a name="line.177"></a>
+<FONT color="green">178</FONT>        @Deprecated<a name="line.178"></a>
+<FONT color="green">179</FONT>        protected PointVectorValuePair optimizeInternal(final int maxEval, final FUNC f,<a name="line.179"></a>
+<FONT color="green">180</FONT>                                                        final double[] t, final double[] w,<a name="line.180"></a>
+<FONT color="green">181</FONT>                                                        final double[] startPoint) {<a name="line.181"></a>
+<FONT color="green">182</FONT>            // Checks.<a name="line.182"></a>
+<FONT color="green">183</FONT>            if (f == null) {<a name="line.183"></a>
+<FONT color="green">184</FONT>                throw new NullArgumentException();<a name="line.184"></a>
+<FONT color="green">185</FONT>            }<a name="line.185"></a>
+<FONT color="green">186</FONT>            if (t == null) {<a name="line.186"></a>
+<FONT color="green">187</FONT>                throw new NullArgumentException();<a name="line.187"></a>
+<FONT color="green">188</FONT>            }<a name="line.188"></a>
+<FONT color="green">189</FONT>            if (w == null) {<a name="line.189"></a>
+<FONT color="green">190</FONT>                throw new NullArgumentException();<a name="line.190"></a>
+<FONT color="green">191</FONT>            }<a name="line.191"></a>
+<FONT color="green">192</FONT>            if (startPoint == null) {<a name="line.192"></a>
+<FONT color="green">193</FONT>                throw new NullArgumentException();<a name="line.193"></a>
+<FONT color="green">194</FONT>            }<a name="line.194"></a>
+<FONT color="green">195</FONT>            if (t.length != w.length) {<a name="line.195"></a>
+<FONT color="green">196</FONT>                throw new DimensionMismatchException(t.length, w.length);<a name="line.196"></a>
+<FONT color="green">197</FONT>            }<a name="line.197"></a>
+<FONT color="green">198</FONT>    <a name="line.198"></a>
+<FONT color="green">199</FONT>            return optimizeInternal(maxEval, f,<a name="line.199"></a>
+<FONT color="green">200</FONT>                                    new Target(t),<a name="line.200"></a>
+<FONT color="green">201</FONT>                                    new Weight(w),<a name="line.201"></a>
+<FONT color="green">202</FONT>                                    new InitialGuess(startPoint));<a name="line.202"></a>
+<FONT color="green">203</FONT>        }<a name="line.203"></a>
+<FONT color="green">204</FONT>    <a name="line.204"></a>
+<FONT color="green">205</FONT>        /**<a name="line.205"></a>
+<FONT color="green">206</FONT>         * Optimize an objective function.<a name="line.206"></a>
+<FONT color="green">207</FONT>         *<a name="line.207"></a>
+<FONT color="green">208</FONT>         * @param maxEval Allowed number of evaluations of the objective function.<a name="line.208"></a>
+<FONT color="green">209</FONT>         * @param f Objective function.<a name="line.209"></a>
+<FONT color="green">210</FONT>         * @param optData Optimization data. The following data will be looked for:<a name="line.210"></a>
+<FONT color="green">211</FONT>         * &lt;ul&gt;<a name="line.211"></a>
+<FONT color="green">212</FONT>         *  &lt;li&gt;{@link Target}&lt;/li&gt;<a name="line.212"></a>
+<FONT color="green">213</FONT>         *  &lt;li&gt;{@link Weight}&lt;/li&gt;<a name="line.213"></a>
+<FONT color="green">214</FONT>         *  &lt;li&gt;{@link InitialGuess}&lt;/li&gt;<a name="line.214"></a>
+<FONT color="green">215</FONT>         * &lt;/ul&gt;<a name="line.215"></a>
+<FONT color="green">216</FONT>         * @return the point/value pair giving the optimal value of the objective<a name="line.216"></a>
+<FONT color="green">217</FONT>         * function.<a name="line.217"></a>
+<FONT color="green">218</FONT>         * @throws TooManyEvaluationsException if the maximal number of<a name="line.218"></a>
+<FONT color="green">219</FONT>         * evaluations is exceeded.<a name="line.219"></a>
+<FONT color="green">220</FONT>         * @throws DimensionMismatchException if the initial guess, target, and weight<a name="line.220"></a>
+<FONT color="green">221</FONT>         * arguments have inconsistent dimensions.<a name="line.221"></a>
+<FONT color="green">222</FONT>         *<a name="line.222"></a>
+<FONT color="green">223</FONT>         * @since 3.1<a name="line.223"></a>
+<FONT color="green">224</FONT>         */<a name="line.224"></a>
+<FONT color="green">225</FONT>        protected PointVectorValuePair optimizeInternal(int maxEval,<a name="line.225"></a>
+<FONT color="green">226</FONT>                                                        FUNC f,<a name="line.226"></a>
+<FONT color="green">227</FONT>                                                        OptimizationData... optData)<a name="line.227"></a>
+<FONT color="green">228</FONT>            throws TooManyEvaluationsException,<a name="line.228"></a>
+<FONT color="green">229</FONT>                   DimensionMismatchException {<a name="line.229"></a>
+<FONT color="green">230</FONT>            // Set internal state.<a name="line.230"></a>
+<FONT color="green">231</FONT>            evaluations.setMaximalCount(maxEval);<a name="line.231"></a>
+<FONT color="green">232</FONT>            evaluations.resetCount();<a name="line.232"></a>
+<FONT color="green">233</FONT>            function = f;<a name="line.233"></a>
+<FONT color="green">234</FONT>            // Retrieve other settings.<a name="line.234"></a>
+<FONT color="green">235</FONT>            parseOptimizationData(optData);<a name="line.235"></a>
+<FONT color="green">236</FONT>            // Check input consistency.<a name="line.236"></a>
+<FONT color="green">237</FONT>            checkParameters();<a name="line.237"></a>
+<FONT color="green">238</FONT>            // Allow subclasses to reset their own internal state.<a name="line.238"></a>
+<FONT color="green">239</FONT>            setUp();<a name="line.239"></a>
+<FONT color="green">240</FONT>            // Perform computation.<a name="line.240"></a>
+<FONT color="green">241</FONT>            return doOptimize();<a name="line.241"></a>
+<FONT color="green">242</FONT>        }<a name="line.242"></a>
+<FONT color="green">243</FONT>    <a name="line.243"></a>
+<FONT color="green">244</FONT>        /**<a name="line.244"></a>
+<FONT color="green">245</FONT>         * Gets the initial values of the optimized parameters.<a name="line.245"></a>
+<FONT color="green">246</FONT>         *<a name="line.246"></a>
+<FONT color="green">247</FONT>         * @return the initial guess.<a name="line.247"></a>
+<FONT color="green">248</FONT>         */<a name="line.248"></a>
+<FONT color="green">249</FONT>        public double[] getStartPoint() {<a name="line.249"></a>
+<FONT color="green">250</FONT>            return start.clone();<a name="line.250"></a>
+<FONT color="green">251</FONT>        }<a name="line.251"></a>
+<FONT color="green">252</FONT>    <a name="line.252"></a>
+<FONT color="green">253</FONT>        /**<a name="line.253"></a>
+<FONT color="green">254</FONT>         * Gets the weight matrix of the observations.<a name="line.254"></a>
+<FONT color="green">255</FONT>         *<a name="line.255"></a>
+<FONT color="green">256</FONT>         * @return the weight matrix.<a name="line.256"></a>
+<FONT color="green">257</FONT>         * @since 3.1<a name="line.257"></a>
+<FONT color="green">258</FONT>         */<a name="line.258"></a>
+<FONT color="green">259</FONT>        public RealMatrix getWeight() {<a name="line.259"></a>
+<FONT color="green">260</FONT>            return weightMatrix.copy();<a name="line.260"></a>
+<FONT color="green">261</FONT>        }<a name="line.261"></a>
+<FONT color="green">262</FONT>        /**<a name="line.262"></a>
+<FONT color="green">263</FONT>         * Gets the observed values to be matched by the objective vector<a name="line.263"></a>
+<FONT color="green">264</FONT>         * function.<a name="line.264"></a>
+<FONT color="green">265</FONT>         *<a name="line.265"></a>
+<FONT color="green">266</FONT>         * @return the target values.<a name="line.266"></a>
+<FONT color="green">267</FONT>         * @since 3.1<a name="line.267"></a>
+<FONT color="green">268</FONT>         */<a name="line.268"></a>
+<FONT color="green">269</FONT>        public double[] getTarget() {<a name="line.269"></a>
+<FONT color="green">270</FONT>            return target.clone();<a name="line.270"></a>
+<FONT color="green">271</FONT>        }<a name="line.271"></a>
+<FONT color="green">272</FONT>    <a name="line.272"></a>
+<FONT color="green">273</FONT>        /**<a name="line.273"></a>
+<FONT color="green">274</FONT>         * Gets the objective vector function.<a name="line.274"></a>
+<FONT color="green">275</FONT>         * Note that this access bypasses the evaluation counter.<a name="line.275"></a>
+<FONT color="green">276</FONT>         *<a name="line.276"></a>
+<FONT color="green">277</FONT>         * @return the objective vector function.<a name="line.277"></a>
+<FONT color="green">278</FONT>         * @since 3.1<a name="line.278"></a>
+<FONT color="green">279</FONT>         */<a name="line.279"></a>
+<FONT color="green">280</FONT>        protected FUNC getObjectiveFunction() {<a name="line.280"></a>
+<FONT color="green">281</FONT>            return function;<a name="line.281"></a>
+<FONT color="green">282</FONT>        }<a name="line.282"></a>
+<FONT color="green">283</FONT>    <a name="line.283"></a>
+<FONT color="green">284</FONT>        /**<a name="line.284"></a>
+<FONT color="green">285</FONT>         * Perform the bulk of the optimization algorithm.<a name="line.285"></a>
+<FONT color="green">286</FONT>         *<a name="line.286"></a>
+<FONT color="green">287</FONT>         * @return the point/value pair giving the optimal value for the<a name="line.287"></a>
+<FONT color="green">288</FONT>         * objective function.<a name="line.288"></a>
+<FONT color="green">289</FONT>         */<a name="line.289"></a>
+<FONT color="green">290</FONT>        protected abstract PointVectorValuePair doOptimize();<a name="line.290"></a>
+<FONT color="green">291</FONT>    <a name="line.291"></a>
+<FONT color="green">292</FONT>        /**<a name="line.292"></a>
+<FONT color="green">293</FONT>         * @return a reference to the {@link #target array}.<a name="line.293"></a>
+<FONT color="green">294</FONT>         * @deprecated As of 3.1.<a name="line.294"></a>
+<FONT color="green">295</FONT>         */<a name="line.295"></a>
+<FONT color="green">296</FONT>        @Deprecated<a name="line.296"></a>
+<FONT color="green">297</FONT>        protected double[] getTargetRef() {<a name="line.297"></a>
+<FONT color="green">298</FONT>            return target;<a name="line.298"></a>
+<FONT color="green">299</FONT>        }<a name="line.299"></a>
+<FONT color="green">300</FONT>        /**<a name="line.300"></a>
+<FONT color="green">301</FONT>         * @return a reference to the {@link #weight array}.<a name="line.301"></a>
+<FONT color="green">302</FONT>         * @deprecated As of 3.1.<a name="line.302"></a>
+<FONT color="green">303</FONT>         */<a name="line.303"></a>
+<FONT color="green">304</FONT>        @Deprecated<a name="line.304"></a>
+<FONT color="green">305</FONT>        protected double[] getWeightRef() {<a name="line.305"></a>
+<FONT color="green">306</FONT>            return weight;<a name="line.306"></a>
+<FONT color="green">307</FONT>        }<a name="line.307"></a>
+<FONT color="green">308</FONT>    <a name="line.308"></a>
+<FONT color="green">309</FONT>        /**<a name="line.309"></a>
+<FONT color="green">310</FONT>         * Method which a subclass &lt;em&gt;must&lt;/em&gt; override whenever its internal<a name="line.310"></a>
+<FONT color="green">311</FONT>         * state depend on the {@link OptimizationData input} parsed by this base<a name="line.311"></a>
+<FONT color="green">312</FONT>         * class.<a name="line.312"></a>
+<FONT color="green">313</FONT>         * It will be called after the parsing step performed in the<a name="line.313"></a>
+<FONT color="green">314</FONT>         * {@link #optimize(int,MultivariateVectorFunction,OptimizationData[])<a name="line.314"></a>
+<FONT color="green">315</FONT>         * optimize} method and just before {@link #doOptimize()}.<a name="line.315"></a>
+<FONT color="green">316</FONT>         *<a name="line.316"></a>
+<FONT color="green">317</FONT>         * @since 3.1<a name="line.317"></a>
+<FONT color="green">318</FONT>         */<a name="line.318"></a>
+<FONT color="green">319</FONT>        protected void setUp() {<a name="line.319"></a>
+<FONT color="green">320</FONT>            // XXX Temporary code until the new internal data is used everywhere.<a name="line.320"></a>
+<FONT color="green">321</FONT>            final int dim = target.length;<a name="line.321"></a>
+<FONT color="green">322</FONT>            weight = new double[dim];<a name="line.322"></a>
+<FONT color="green">323</FONT>            for (int i = 0; i &lt; dim; i++) {<a name="line.323"></a>
+<FONT color="green">324</FONT>                weight[i] = weightMatrix.getEntry(i, i);<a name="line.324"></a>
+<FONT color="green">325</FONT>            }<a name="line.325"></a>
+<FONT color="green">326</FONT>        }<a name="line.326"></a>
+<FONT color="green">327</FONT>    <a name="line.327"></a>
+<FONT color="green">328</FONT>        /**<a name="line.328"></a>
+<FONT color="green">329</FONT>         * Scans the list of (required and optional) optimization data that<a name="line.329"></a>
+<FONT color="green">330</FONT>         * characterize the problem.<a name="line.330"></a>
+<FONT color="green">331</FONT>         *<a name="line.331"></a>
+<FONT color="green">332</FONT>         * @param optData Optimization data. The following data will be looked for:<a name="line.332"></a>
+<FONT color="green">333</FONT>         * &lt;ul&gt;<a name="line.333"></a>
+<FONT color="green">334</FONT>         *  &lt;li&gt;{@link Target}&lt;/li&gt;<a name="line.334"></a>
+<FONT color="green">335</FONT>         *  &lt;li&gt;{@link Weight}&lt;/li&gt;<a name="line.335"></a>
+<FONT color="green">336</FONT>         *  &lt;li&gt;{@link InitialGuess}&lt;/li&gt;<a name="line.336"></a>
+<FONT color="green">337</FONT>         * &lt;/ul&gt;<a name="line.337"></a>
+<FONT color="green">338</FONT>         */<a name="line.338"></a>
+<FONT color="green">339</FONT>        private void parseOptimizationData(OptimizationData... optData) {<a name="line.339"></a>
+<FONT color="green">340</FONT>            // The existing values (as set by the previous call) are reused if<a name="line.340"></a>
+<FONT color="green">341</FONT>            // not provided in the argument list.<a name="line.341"></a>
+<FONT color="green">342</FONT>            for (OptimizationData data : optData) {<a name="line.342"></a>
+<FONT color="green">343</FONT>                if (data instanceof Target) {<a name="line.343"></a>
+<FONT color="green">344</FONT>                    target = ((Target) data).getTarget();<a name="line.344"></a>
+<FONT color="green">345</FONT>                    continue;<a name="line.345"></a>
+<FONT color="green">346</FONT>                }<a name="line.346"></a>
+<FONT color="green">347</FONT>                if (data instanceof Weight) {<a name="line.347"></a>
+<FONT color="green">348</FONT>                    weightMatrix = ((Weight) data).getWeight();<a name="line.348"></a>
+<FONT color="green">349</FONT>                    continue;<a name="line.349"></a>
+<FONT color="green">350</FONT>                }<a name="line.350"></a>
+<FONT color="green">351</FONT>                if (data instanceof InitialGuess) {<a name="line.351"></a>
+<FONT color="green">352</FONT>                    start = ((InitialGuess) data).getInitialGuess();<a name="line.352"></a>
+<FONT color="green">353</FONT>                    continue;<a name="line.353"></a>
+<FONT color="green">354</FONT>                }<a name="line.354"></a>
+<FONT color="green">355</FONT>            }<a name="line.355"></a>
+<FONT color="green">356</FONT>        }<a name="line.356"></a>
+<FONT color="green">357</FONT>    <a name="line.357"></a>
+<FONT color="green">358</FONT>        /**<a name="line.358"></a>
+<FONT color="green">359</FONT>         * Check parameters consistency.<a name="line.359"></a>
+<FONT color="green">360</FONT>         *<a name="line.360"></a>
+<FONT color="green">361</FONT>         * @throws DimensionMismatchException if {@link #target} and<a name="line.361"></a>
+<FONT color="green">362</FONT>         * {@link #weightMatrix} have inconsistent dimensions.<a name="line.362"></a>
+<FONT color="green">363</FONT>         */<a name="line.363"></a>
+<FONT color="green">364</FONT>        private void checkParameters() {<a name="line.364"></a>
+<FONT color="green">365</FONT>            if (target.length != weightMatrix.getColumnDimension()) {<a name="line.365"></a>
+<FONT color="green">366</FONT>                throw new DimensionMismatchException(target.length,<a name="line.366"></a>
+<FONT color="green">367</FONT>                                                     weightMatrix.getColumnDimension());<a name="line.367"></a>
+<FONT color="green">368</FONT>            }<a name="line.368"></a>
+<FONT color="green">369</FONT>        }<a name="line.369"></a>
+<FONT color="green">370</FONT>    }<a name="line.370"></a>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</PRE>
+</BODY>
+</HTML>

@@ -1,0 +1,72 @@
+<?xml version="1.0" ?>
+<project name="hcimaging" default="compile" basedir=".">
+  <property name="source" value="source"/>
+  <property name="testsource" value="test"/>
+  <property name="build" value="build"/>
+  <property name="testclasses" value="build/classes/test"/>
+  <property name="frameworkclasses" value="build/classes/framework"/>
+  <property name="jar" value="build/jar"/>
+  <property name="doc" value="doc"/>
+
+  <path id="dependencies">
+    <pathelement location="lib/ij.jar"/>
+  </path>
+
+  <path id="testdependencies">
+    <path refid="dependencies"/>
+    <pathelement location="${frameworkclasses}"/>
+    <pathelement location="lib/junit.jar"/>
+  </path>
+
+  <target name="compile" description="Compile all Java source code">
+    <mkdir dir="${frameworkclasses}"/>
+    <javac srcdir="${source}" 
+      destdir="${frameworkclasses}" 
+      debug="on"
+      includeantruntime="false"
+      classpathref="dependencies">
+      <compilerarg value="-Xlint:deprecation"/>
+    </javac>
+
+    <mkdir dir="${testclasses}"/>
+    <javac srcdir="${testsource}" destdir="${testclasses}" 
+      debug="on"
+      includeantruntime="false">
+      <classpath>
+        <path refid="testdependencies"/>
+      </classpath>
+    </javac>
+  </target>
+
+  <target name="test" depends="compile" description="Run unit tests">
+    <junit fork="on" printsummary="on" haltonerror="true" haltonfailure="true">
+      <assertions><enable/></assertions>
+      <classpath>
+        <pathelement location="${testclasses}"/>
+        <path refid="testdependencies"/>
+      </classpath>
+      <batchtest>
+        <fileset dir="${testclasses}" includes="**/*Test.class"/>
+      </batchtest>
+      <formatter type="plain" usefile="false"/>
+    </junit>
+  </target>
+
+  <target name="doc" depends="compile">
+    <mkdir dir="${doc}"/>
+    <javadoc sourcepath="${source}" destdir="${doc}"/>
+  </target>
+
+  <target name="jar" depends="compile">
+    <mkdir dir="${jar}"/>
+    <jar destfile="${jar}/${ant.project.name}.jar" 
+      basedir="${frameworkclasses}"/>
+    <jar destfile="${jar}/${ant.project.name}_source.jar"
+         basedir="${source}"/>
+  </target>
+
+  <target name="clean">
+    <delete dir="${build}"/>
+  </target>
+
+</project>

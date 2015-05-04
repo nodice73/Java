@@ -1,0 +1,306 @@
+<HTML>
+<BODY BGCOLOR="white">
+<PRE>
+<FONT color="green">001</FONT>    /*<a name="line.1"></a>
+<FONT color="green">002</FONT>     * Licensed to the Apache Software Foundation (ASF) under one or more<a name="line.2"></a>
+<FONT color="green">003</FONT>     * contributor license agreements.  See the NOTICE file distributed with<a name="line.3"></a>
+<FONT color="green">004</FONT>     * this work for additional information regarding copyright ownership.<a name="line.4"></a>
+<FONT color="green">005</FONT>     * The ASF licenses this file to You under the Apache License, Version 2.0<a name="line.5"></a>
+<FONT color="green">006</FONT>     * (the "License"); you may not use this file except in compliance with<a name="line.6"></a>
+<FONT color="green">007</FONT>     * the License.  You may obtain a copy of the License at<a name="line.7"></a>
+<FONT color="green">008</FONT>     *<a name="line.8"></a>
+<FONT color="green">009</FONT>     *      http://www.apache.org/licenses/LICENSE-2.0<a name="line.9"></a>
+<FONT color="green">010</FONT>     *<a name="line.10"></a>
+<FONT color="green">011</FONT>     * Unless required by applicable law or agreed to in writing, software<a name="line.11"></a>
+<FONT color="green">012</FONT>     * distributed under the License is distributed on an "AS IS" BASIS,<a name="line.12"></a>
+<FONT color="green">013</FONT>     * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.<a name="line.13"></a>
+<FONT color="green">014</FONT>     * See the License for the specific language governing permissions and<a name="line.14"></a>
+<FONT color="green">015</FONT>     * limitations under the License.<a name="line.15"></a>
+<FONT color="green">016</FONT>     */<a name="line.16"></a>
+<FONT color="green">017</FONT>    package org.apache.commons.math3.analysis.interpolation;<a name="line.17"></a>
+<FONT color="green">018</FONT>    <a name="line.18"></a>
+<FONT color="green">019</FONT>    import java.util.ArrayList;<a name="line.19"></a>
+<FONT color="green">020</FONT>    import java.util.Arrays;<a name="line.20"></a>
+<FONT color="green">021</FONT>    import java.util.List;<a name="line.21"></a>
+<FONT color="green">022</FONT>    <a name="line.22"></a>
+<FONT color="green">023</FONT>    import org.apache.commons.math3.analysis.differentiation.DerivativeStructure;<a name="line.23"></a>
+<FONT color="green">024</FONT>    import org.apache.commons.math3.analysis.differentiation.UnivariateDifferentiableVectorFunction;<a name="line.24"></a>
+<FONT color="green">025</FONT>    import org.apache.commons.math3.analysis.polynomials.PolynomialFunction;<a name="line.25"></a>
+<FONT color="green">026</FONT>    import org.apache.commons.math3.exception.MathArithmeticException;<a name="line.26"></a>
+<FONT color="green">027</FONT>    import org.apache.commons.math3.exception.NoDataException;<a name="line.27"></a>
+<FONT color="green">028</FONT>    import org.apache.commons.math3.exception.ZeroException;<a name="line.28"></a>
+<FONT color="green">029</FONT>    import org.apache.commons.math3.exception.util.LocalizedFormats;<a name="line.29"></a>
+<FONT color="green">030</FONT>    import org.apache.commons.math3.util.ArithmeticUtils;<a name="line.30"></a>
+<FONT color="green">031</FONT>    <a name="line.31"></a>
+<FONT color="green">032</FONT>    /** Polynomial interpolator using both sample values and sample derivatives.<a name="line.32"></a>
+<FONT color="green">033</FONT>     * &lt;p&gt;<a name="line.33"></a>
+<FONT color="green">034</FONT>     * The interpolation polynomials match all sample points, including both values<a name="line.34"></a>
+<FONT color="green">035</FONT>     * and provided derivatives. There is one polynomial for each component of<a name="line.35"></a>
+<FONT color="green">036</FONT>     * the values vector. All polynomials have the same degree. The degree of the<a name="line.36"></a>
+<FONT color="green">037</FONT>     * polynomials depends on the number of points and number of derivatives at each<a name="line.37"></a>
+<FONT color="green">038</FONT>     * point. For example the interpolation polynomials for n sample points without<a name="line.38"></a>
+<FONT color="green">039</FONT>     * any derivatives all have degree n-1. The interpolation polynomials for n<a name="line.39"></a>
+<FONT color="green">040</FONT>     * sample points with the two extreme points having value and first derivative<a name="line.40"></a>
+<FONT color="green">041</FONT>     * and the remaining points having value only all have degree n+1. The<a name="line.41"></a>
+<FONT color="green">042</FONT>     * interpolation polynomial for n sample points with value, first and second<a name="line.42"></a>
+<FONT color="green">043</FONT>     * derivative for all points all have degree 3n-1.<a name="line.43"></a>
+<FONT color="green">044</FONT>     * &lt;/p&gt;<a name="line.44"></a>
+<FONT color="green">045</FONT>     *<a name="line.45"></a>
+<FONT color="green">046</FONT>     * @version $Id: HermiteInterpolator.java 1410460 2012-11-16 16:49:38Z erans $<a name="line.46"></a>
+<FONT color="green">047</FONT>     * @since 3.1<a name="line.47"></a>
+<FONT color="green">048</FONT>     */<a name="line.48"></a>
+<FONT color="green">049</FONT>    public class HermiteInterpolator implements UnivariateDifferentiableVectorFunction {<a name="line.49"></a>
+<FONT color="green">050</FONT>    <a name="line.50"></a>
+<FONT color="green">051</FONT>        /** Sample abscissae. */<a name="line.51"></a>
+<FONT color="green">052</FONT>        private final List&lt;Double&gt; abscissae;<a name="line.52"></a>
+<FONT color="green">053</FONT>    <a name="line.53"></a>
+<FONT color="green">054</FONT>        /** Top diagonal of the divided differences array. */<a name="line.54"></a>
+<FONT color="green">055</FONT>        private final List&lt;double[]&gt; topDiagonal;<a name="line.55"></a>
+<FONT color="green">056</FONT>    <a name="line.56"></a>
+<FONT color="green">057</FONT>        /** Bottom diagonal of the divided differences array. */<a name="line.57"></a>
+<FONT color="green">058</FONT>        private final List&lt;double[]&gt; bottomDiagonal;<a name="line.58"></a>
+<FONT color="green">059</FONT>    <a name="line.59"></a>
+<FONT color="green">060</FONT>        /** Create an empty interpolator.<a name="line.60"></a>
+<FONT color="green">061</FONT>         */<a name="line.61"></a>
+<FONT color="green">062</FONT>        public HermiteInterpolator() {<a name="line.62"></a>
+<FONT color="green">063</FONT>            this.abscissae      = new ArrayList&lt;Double&gt;();<a name="line.63"></a>
+<FONT color="green">064</FONT>            this.topDiagonal    = new ArrayList&lt;double[]&gt;();<a name="line.64"></a>
+<FONT color="green">065</FONT>            this.bottomDiagonal = new ArrayList&lt;double[]&gt;();<a name="line.65"></a>
+<FONT color="green">066</FONT>        }<a name="line.66"></a>
+<FONT color="green">067</FONT>    <a name="line.67"></a>
+<FONT color="green">068</FONT>        /** Add a sample point.<a name="line.68"></a>
+<FONT color="green">069</FONT>         * &lt;p&gt;<a name="line.69"></a>
+<FONT color="green">070</FONT>         * This method must be called once for each sample point. It is allowed to<a name="line.70"></a>
+<FONT color="green">071</FONT>         * mix some calls with values only with calls with values and first<a name="line.71"></a>
+<FONT color="green">072</FONT>         * derivatives.<a name="line.72"></a>
+<FONT color="green">073</FONT>         * &lt;/p&gt;<a name="line.73"></a>
+<FONT color="green">074</FONT>         * &lt;p&gt;<a name="line.74"></a>
+<FONT color="green">075</FONT>         * The point abscissae for all calls &lt;em&gt;must&lt;/em&gt; be different.<a name="line.75"></a>
+<FONT color="green">076</FONT>         * &lt;/p&gt;<a name="line.76"></a>
+<FONT color="green">077</FONT>         * @param x abscissa of the sample point<a name="line.77"></a>
+<FONT color="green">078</FONT>         * @param value value and derivatives of the sample point<a name="line.78"></a>
+<FONT color="green">079</FONT>         * (if only one row is passed, it is the value, if two rows are<a name="line.79"></a>
+<FONT color="green">080</FONT>         * passed the first one is the value and the second the derivative<a name="line.80"></a>
+<FONT color="green">081</FONT>         * and so on)<a name="line.81"></a>
+<FONT color="green">082</FONT>         * @exception ZeroException if the abscissa difference between added point<a name="line.82"></a>
+<FONT color="green">083</FONT>         * and a previous point is zero (i.e. the two points are at same abscissa)<a name="line.83"></a>
+<FONT color="green">084</FONT>         * @exception MathArithmeticException if the number of derivatives is larger<a name="line.84"></a>
+<FONT color="green">085</FONT>         * than 20, which prevents computation of a factorial<a name="line.85"></a>
+<FONT color="green">086</FONT>         */<a name="line.86"></a>
+<FONT color="green">087</FONT>        public void addSamplePoint(final double x, final double[] ... value)<a name="line.87"></a>
+<FONT color="green">088</FONT>            throws ZeroException, MathArithmeticException {<a name="line.88"></a>
+<FONT color="green">089</FONT>    <a name="line.89"></a>
+<FONT color="green">090</FONT>            for (int i = 0; i &lt; value.length; ++i) {<a name="line.90"></a>
+<FONT color="green">091</FONT>    <a name="line.91"></a>
+<FONT color="green">092</FONT>                final double[] y = value[i].clone();<a name="line.92"></a>
+<FONT color="green">093</FONT>                if (i &gt; 1) {<a name="line.93"></a>
+<FONT color="green">094</FONT>                    double inv = 1.0 / ArithmeticUtils.factorial(i);<a name="line.94"></a>
+<FONT color="green">095</FONT>                    for (int j = 0; j &lt; y.length; ++j) {<a name="line.95"></a>
+<FONT color="green">096</FONT>                        y[j] *= inv;<a name="line.96"></a>
+<FONT color="green">097</FONT>                    }<a name="line.97"></a>
+<FONT color="green">098</FONT>                }<a name="line.98"></a>
+<FONT color="green">099</FONT>    <a name="line.99"></a>
+<FONT color="green">100</FONT>                // update the bottom diagonal of the divided differences array<a name="line.100"></a>
+<FONT color="green">101</FONT>                final int n = abscissae.size();<a name="line.101"></a>
+<FONT color="green">102</FONT>                bottomDiagonal.add(n - i, y);<a name="line.102"></a>
+<FONT color="green">103</FONT>                double[] bottom0 = y;<a name="line.103"></a>
+<FONT color="green">104</FONT>                for (int j = i; j &lt; n; ++j) {<a name="line.104"></a>
+<FONT color="green">105</FONT>                    final double[] bottom1 = bottomDiagonal.get(n - (j + 1));<a name="line.105"></a>
+<FONT color="green">106</FONT>                    final double inv = 1.0 / (x - abscissae.get(n - (j + 1)));<a name="line.106"></a>
+<FONT color="green">107</FONT>                    if (Double.isInfinite(inv)) {<a name="line.107"></a>
+<FONT color="green">108</FONT>                        throw new ZeroException(LocalizedFormats.DUPLICATED_ABSCISSA_DIVISION_BY_ZERO, x);<a name="line.108"></a>
+<FONT color="green">109</FONT>                    }<a name="line.109"></a>
+<FONT color="green">110</FONT>                    for (int k = 0; k &lt; y.length; ++k) {<a name="line.110"></a>
+<FONT color="green">111</FONT>                        bottom1[k] = inv * (bottom0[k] - bottom1[k]);<a name="line.111"></a>
+<FONT color="green">112</FONT>                    }<a name="line.112"></a>
+<FONT color="green">113</FONT>                    bottom0 = bottom1;<a name="line.113"></a>
+<FONT color="green">114</FONT>                }<a name="line.114"></a>
+<FONT color="green">115</FONT>    <a name="line.115"></a>
+<FONT color="green">116</FONT>                // update the top diagonal of the divided differences array<a name="line.116"></a>
+<FONT color="green">117</FONT>                topDiagonal.add(bottom0.clone());<a name="line.117"></a>
+<FONT color="green">118</FONT>    <a name="line.118"></a>
+<FONT color="green">119</FONT>                // update the abscissae array<a name="line.119"></a>
+<FONT color="green">120</FONT>                abscissae.add(x);<a name="line.120"></a>
+<FONT color="green">121</FONT>    <a name="line.121"></a>
+<FONT color="green">122</FONT>            }<a name="line.122"></a>
+<FONT color="green">123</FONT>    <a name="line.123"></a>
+<FONT color="green">124</FONT>        }<a name="line.124"></a>
+<FONT color="green">125</FONT>    <a name="line.125"></a>
+<FONT color="green">126</FONT>        /** Compute the interpolation polynomials.<a name="line.126"></a>
+<FONT color="green">127</FONT>         * @return interpolation polynomials array<a name="line.127"></a>
+<FONT color="green">128</FONT>         * @exception NoDataException if sample is empty<a name="line.128"></a>
+<FONT color="green">129</FONT>         */<a name="line.129"></a>
+<FONT color="green">130</FONT>        public PolynomialFunction[] getPolynomials()<a name="line.130"></a>
+<FONT color="green">131</FONT>            throws NoDataException {<a name="line.131"></a>
+<FONT color="green">132</FONT>    <a name="line.132"></a>
+<FONT color="green">133</FONT>            // safety check<a name="line.133"></a>
+<FONT color="green">134</FONT>            checkInterpolation();<a name="line.134"></a>
+<FONT color="green">135</FONT>    <a name="line.135"></a>
+<FONT color="green">136</FONT>            // iteration initialization<a name="line.136"></a>
+<FONT color="green">137</FONT>            final PolynomialFunction zero = polynomial(0);<a name="line.137"></a>
+<FONT color="green">138</FONT>            PolynomialFunction[] polynomials = new PolynomialFunction[topDiagonal.get(0).length];<a name="line.138"></a>
+<FONT color="green">139</FONT>            for (int i = 0; i &lt; polynomials.length; ++i) {<a name="line.139"></a>
+<FONT color="green">140</FONT>                polynomials[i] = zero;<a name="line.140"></a>
+<FONT color="green">141</FONT>            }<a name="line.141"></a>
+<FONT color="green">142</FONT>            PolynomialFunction coeff = polynomial(1);<a name="line.142"></a>
+<FONT color="green">143</FONT>    <a name="line.143"></a>
+<FONT color="green">144</FONT>            // build the polynomials by iterating on the top diagonal of the divided differences array<a name="line.144"></a>
+<FONT color="green">145</FONT>            for (int i = 0; i &lt; topDiagonal.size(); ++i) {<a name="line.145"></a>
+<FONT color="green">146</FONT>                double[] tdi = topDiagonal.get(i);<a name="line.146"></a>
+<FONT color="green">147</FONT>                for (int k = 0; k &lt; polynomials.length; ++k) {<a name="line.147"></a>
+<FONT color="green">148</FONT>                    polynomials[k] = polynomials[k].add(coeff.multiply(polynomial(tdi[k])));<a name="line.148"></a>
+<FONT color="green">149</FONT>                }<a name="line.149"></a>
+<FONT color="green">150</FONT>                coeff = coeff.multiply(polynomial(-abscissae.get(i), 1.0));<a name="line.150"></a>
+<FONT color="green">151</FONT>            }<a name="line.151"></a>
+<FONT color="green">152</FONT>    <a name="line.152"></a>
+<FONT color="green">153</FONT>            return polynomials;<a name="line.153"></a>
+<FONT color="green">154</FONT>    <a name="line.154"></a>
+<FONT color="green">155</FONT>        }<a name="line.155"></a>
+<FONT color="green">156</FONT>    <a name="line.156"></a>
+<FONT color="green">157</FONT>        /** Interpolate value at a specified abscissa.<a name="line.157"></a>
+<FONT color="green">158</FONT>         * &lt;p&gt;<a name="line.158"></a>
+<FONT color="green">159</FONT>         * Calling this method is equivalent to call the {@link PolynomialFunction#value(double)<a name="line.159"></a>
+<FONT color="green">160</FONT>         * value} methods of all polynomials returned by {@link #getPolynomials() getPolynomials},<a name="line.160"></a>
+<FONT color="green">161</FONT>         * except it does not build the intermediate polynomials, so this method is faster and<a name="line.161"></a>
+<FONT color="green">162</FONT>         * numerically more stable.<a name="line.162"></a>
+<FONT color="green">163</FONT>         * &lt;/p&gt;<a name="line.163"></a>
+<FONT color="green">164</FONT>         * @param x interpolation abscissa<a name="line.164"></a>
+<FONT color="green">165</FONT>         * @return interpolated value<a name="line.165"></a>
+<FONT color="green">166</FONT>         * @exception NoDataException if sample is empty<a name="line.166"></a>
+<FONT color="green">167</FONT>         */<a name="line.167"></a>
+<FONT color="green">168</FONT>        public double[] value(double x)<a name="line.168"></a>
+<FONT color="green">169</FONT>            throws NoDataException {<a name="line.169"></a>
+<FONT color="green">170</FONT>    <a name="line.170"></a>
+<FONT color="green">171</FONT>            // safety check<a name="line.171"></a>
+<FONT color="green">172</FONT>            checkInterpolation();<a name="line.172"></a>
+<FONT color="green">173</FONT>    <a name="line.173"></a>
+<FONT color="green">174</FONT>            final double[] value = new double[topDiagonal.get(0).length];<a name="line.174"></a>
+<FONT color="green">175</FONT>            double valueCoeff = 1;<a name="line.175"></a>
+<FONT color="green">176</FONT>            for (int i = 0; i &lt; topDiagonal.size(); ++i) {<a name="line.176"></a>
+<FONT color="green">177</FONT>                double[] dividedDifference = topDiagonal.get(i);<a name="line.177"></a>
+<FONT color="green">178</FONT>                for (int k = 0; k &lt; value.length; ++k) {<a name="line.178"></a>
+<FONT color="green">179</FONT>                    value[k] += dividedDifference[k] * valueCoeff;<a name="line.179"></a>
+<FONT color="green">180</FONT>                }<a name="line.180"></a>
+<FONT color="green">181</FONT>                final double deltaX = x - abscissae.get(i);<a name="line.181"></a>
+<FONT color="green">182</FONT>                valueCoeff *= deltaX;<a name="line.182"></a>
+<FONT color="green">183</FONT>            }<a name="line.183"></a>
+<FONT color="green">184</FONT>    <a name="line.184"></a>
+<FONT color="green">185</FONT>            return value;<a name="line.185"></a>
+<FONT color="green">186</FONT>    <a name="line.186"></a>
+<FONT color="green">187</FONT>        }<a name="line.187"></a>
+<FONT color="green">188</FONT>    <a name="line.188"></a>
+<FONT color="green">189</FONT>        /** Interpolate value at a specified abscissa.<a name="line.189"></a>
+<FONT color="green">190</FONT>         * &lt;p&gt;<a name="line.190"></a>
+<FONT color="green">191</FONT>         * Calling this method is equivalent to call the {@link<a name="line.191"></a>
+<FONT color="green">192</FONT>         * PolynomialFunction#value(DerivativeStructure) value} methods of all polynomials<a name="line.192"></a>
+<FONT color="green">193</FONT>         * returned by {@link #getPolynomials() getPolynomials}, except it does not build the<a name="line.193"></a>
+<FONT color="green">194</FONT>         * intermediate polynomials, so this method is faster and numerically more stable.<a name="line.194"></a>
+<FONT color="green">195</FONT>         * &lt;/p&gt;<a name="line.195"></a>
+<FONT color="green">196</FONT>         * @param x interpolation abscissa<a name="line.196"></a>
+<FONT color="green">197</FONT>         * @return interpolated value<a name="line.197"></a>
+<FONT color="green">198</FONT>         * @exception NoDataException if sample is empty<a name="line.198"></a>
+<FONT color="green">199</FONT>         */<a name="line.199"></a>
+<FONT color="green">200</FONT>        public DerivativeStructure[] value(final DerivativeStructure x)<a name="line.200"></a>
+<FONT color="green">201</FONT>            throws NoDataException {<a name="line.201"></a>
+<FONT color="green">202</FONT>    <a name="line.202"></a>
+<FONT color="green">203</FONT>            // safety check<a name="line.203"></a>
+<FONT color="green">204</FONT>            checkInterpolation();<a name="line.204"></a>
+<FONT color="green">205</FONT>    <a name="line.205"></a>
+<FONT color="green">206</FONT>            final DerivativeStructure[] value = new DerivativeStructure[topDiagonal.get(0).length];<a name="line.206"></a>
+<FONT color="green">207</FONT>            Arrays.fill(value, x.getField().getZero());<a name="line.207"></a>
+<FONT color="green">208</FONT>            DerivativeStructure valueCoeff = x.getField().getOne();<a name="line.208"></a>
+<FONT color="green">209</FONT>            for (int i = 0; i &lt; topDiagonal.size(); ++i) {<a name="line.209"></a>
+<FONT color="green">210</FONT>                double[] dividedDifference = topDiagonal.get(i);<a name="line.210"></a>
+<FONT color="green">211</FONT>                for (int k = 0; k &lt; value.length; ++k) {<a name="line.211"></a>
+<FONT color="green">212</FONT>                    value[k] = value[k].add(valueCoeff.multiply(dividedDifference[k]));<a name="line.212"></a>
+<FONT color="green">213</FONT>                }<a name="line.213"></a>
+<FONT color="green">214</FONT>                final DerivativeStructure deltaX = x.subtract(abscissae.get(i));<a name="line.214"></a>
+<FONT color="green">215</FONT>                valueCoeff = valueCoeff.multiply(deltaX);<a name="line.215"></a>
+<FONT color="green">216</FONT>            }<a name="line.216"></a>
+<FONT color="green">217</FONT>    <a name="line.217"></a>
+<FONT color="green">218</FONT>            return value;<a name="line.218"></a>
+<FONT color="green">219</FONT>    <a name="line.219"></a>
+<FONT color="green">220</FONT>        }<a name="line.220"></a>
+<FONT color="green">221</FONT>    <a name="line.221"></a>
+<FONT color="green">222</FONT>        /** Check interpolation can be performed.<a name="line.222"></a>
+<FONT color="green">223</FONT>         * @exception NoDataException if interpolation cannot be performed<a name="line.223"></a>
+<FONT color="green">224</FONT>         * because sample is empty<a name="line.224"></a>
+<FONT color="green">225</FONT>         */<a name="line.225"></a>
+<FONT color="green">226</FONT>        private void checkInterpolation() throws NoDataException {<a name="line.226"></a>
+<FONT color="green">227</FONT>            if (abscissae.isEmpty()) {<a name="line.227"></a>
+<FONT color="green">228</FONT>                throw new NoDataException(LocalizedFormats.EMPTY_INTERPOLATION_SAMPLE);<a name="line.228"></a>
+<FONT color="green">229</FONT>            }<a name="line.229"></a>
+<FONT color="green">230</FONT>        }<a name="line.230"></a>
+<FONT color="green">231</FONT>    <a name="line.231"></a>
+<FONT color="green">232</FONT>        /** Create a polynomial from its coefficients.<a name="line.232"></a>
+<FONT color="green">233</FONT>         * @param c polynomials coefficients<a name="line.233"></a>
+<FONT color="green">234</FONT>         * @return polynomial<a name="line.234"></a>
+<FONT color="green">235</FONT>         */<a name="line.235"></a>
+<FONT color="green">236</FONT>        private PolynomialFunction polynomial(double ... c) {<a name="line.236"></a>
+<FONT color="green">237</FONT>            return new PolynomialFunction(c);<a name="line.237"></a>
+<FONT color="green">238</FONT>        }<a name="line.238"></a>
+<FONT color="green">239</FONT>    <a name="line.239"></a>
+<FONT color="green">240</FONT>    }<a name="line.240"></a>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</PRE>
+</BODY>
+</HTML>
