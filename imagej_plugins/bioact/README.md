@@ -16,6 +16,6 @@ In each position folder, there should be folders representing the
 wavelength of light used in acquisition of the form WL[0-9]+. WL0 should
 contain brightfield images.
 
-An example project can be found at
+An example project folder can be found at
       https://github.com/nodice73/ImageJ/tree/master. 
 Download and run the "test_images" folder.
