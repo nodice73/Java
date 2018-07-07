@@ -30,7 +30,7 @@ public class HCImageFactory {
       System.out.println("The class of hci is " + hci.getClass().getName());
       System.out.println(hci.toString());
 
-      HCImage hci2 = hci.copy();
+      //HCImage hci2 = hci.hccopy();
       System.out.println(
           "The class of hci2 is " + hci.getClass().getName());
       System.out.println("It's info is " + hci.toString());

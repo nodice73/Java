@@ -26,10 +26,10 @@ public class BrightfieldImageTest {
       System.err.println(uie.getStackTrace());
     }
 
-    HCImage flat = hci.flatten(10,50);
-    flat.show();
-    System.out.println(flat.getMaximaList(500));
-    flat.makeMask("MaxEntropy dark");
-    flat.showMask();
+    hci.flatten(10,50);
+    hci.show();
+    System.out.println(hci.getMaximaList(500));
+    hci.makeMask("MaxEntropy dark");
+    hci.showMask();
   }
 }

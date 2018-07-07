@@ -21,7 +21,7 @@ public class BrightfieldImage extends HCImage {
     return new BrightfieldImage(info); 
   }
 
-  public HCImage copy() { return new BrightfieldImage(this.info); }
+  //public HCImage hccopy() { return new BrightfieldImage(this.info); }
 
   public boolean isFluorescence() { return false; }
 
