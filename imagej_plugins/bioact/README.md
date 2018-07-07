@@ -17,7 +17,7 @@ In each position folder, there should be folders representing the
 wavelength of light used in acquisition of the form WL[0-9]+. WL0 should
 contain brightfield images.
 
-Image names are of the form *project*_*image_number*_*position*_*wavelength*.tif.
+Image names are of the form *project*\_*image_number*\_*position*\_*wavelength*.tif.
 
 For example, myproject_0001_A09a_WL0.tif
 
