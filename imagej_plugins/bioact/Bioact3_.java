@@ -31,6 +31,7 @@ public class Bioact3_ implements PlugIn {
   private double area_threshold = 50;
   private String wl = wls[1];
   private boolean isBatch = true;
+  private boolean saveIntermediate = false;
 
   private RoiManager rm;
   private ImagePlus img;
@@ -144,27 +145,38 @@ public class Bioact3_ implements PlugIn {
       img.setRoi(selections[i-1]);
       if (img.getRoi()==null)  IJ.run("Select All");
 
-      ImageStatistics bg_stats = img.getStatistics();  //get background stats
+      //get background stats
+      ImageStatistics bg_stats = img.getStatistics();
 
+      // get foreground stats
       IJ.run("Make Inverse");
-      ImageStatistics fg_stats = img.getStatistics(); // get foreground stats
-      double cell_area_percent = 100*fg_stats.area/total_area; // calculate % area occupied by cells
+      ImageStatistics fg_stats = img.getStatistics();
+
+      // calculate % area occupied by cells
+      double cell_area_percent = 100*fg_stats.area/total_area;
 		
-	  double expTime = image.getExposureTime();  // get the exposure time
+      // get the exposure time
+	  double expTime = image.getExposureTime();
 	   
       double background;
       if (cell_area_percent < area_threshold) {
-        background = bg_stats.mean;    // if cells DO NOT yet cover the percentage specified by the area threshold, calculate the bg intensity
+        // if cells DO NOT yet cover the percentage
+        // specified by the area threshold,
+        // calculate the bg intensity
+        background = bg_stats.mean;
       } else {
         if (!final_bg) {
-          final_running_background_mean = running_background_mean; // if cells DO cover a greater percentage of the area than specified by the area threshold, use previous background.
+          // if cells DO cover a greater percentage of the area than
+          // specified by the area threshold, use previous background.
+          final_running_background_mean = running_background_mean;
         }
         background = final_running_background_mean;
         final_bg = true;
       }	
 		
-      double delta = bg_stats.mean - running_background_mean; // ???
-      running_background_mean += delta/i; // ???
+      // Calculate the running mean background intensity
+      double delta = bg_stats.mean - running_background_mean;
+      running_background_mean += delta/i;
 
       //IJ.log("mean intensity: " + all_stats.mean);
       //IJ.log("mean bg intensity: " + bg_stats.mean);
@@ -172,16 +184,21 @@ public class Bioact3_ implements PlugIn {
       //IJ.log("fg area: " + fg_stats.area);
       //IJ.log("running bg: " + running_background_mean);
 
-      double bs_intden = (all_stats.mean-background)*total_area; //subtract mean background from mean intensity and multiply by area
-      double norm_bs_intden = (all_stats.mean-background)*total_area/expTime; // subtract mean background from mean intensity and multiply by area, then normalize to exposure time.
+      //subtract mean background from mean intensity and multiply by area
+      double bs_intden = (all_stats.mean-background)*total_area;
+
+      // subtract mean background from mean intensity and multiply by area,
+      // then normalize to exposure time.
+      double norm_bs_intden = (all_stats.mean-background)*total_area/expTime;
       //IJ.log("BS INTDEN: "+bs_intden);
       //IJ.log("\n");
 
+      // print the results
       out.println(image.getPosition()+"\t"+image.getWavelength()+"\t"+i+"\t"+
-                  hce.elapsedTime(image,'m')+"\t"+norm_bs_intden+"\t"+expTime+"\t"+
-                  bs_intden+"\t"+background+"\t"+mean_intensity+"\t"+
-                  rb_radius+"\t"+thresh+"\t"+area_threshold+"\t"+cell_area_percent+"\t"+total_area+"\t"); // print the results
-                  
+                  hce.elapsedTime(image,'m')+"\t"+norm_bs_intden+"\t"+
+                  expTime+"\t"+bs_intden+"\t"+background+"\t"+mean_intensity+
+                  "\t"+rb_radius+"\t"+thresh+"\t"+area_threshold+"\t"+
+                  cell_area_percent+"\t"+total_area+"\t");
     }
   }
 
@@ -222,10 +239,11 @@ public class Bioact3_ implements PlugIn {
 
     gd.addNumericField("Start slice", start_slice, DUNITS);
     gd.addNumericField("Max slices", max_slices, DUNITS);
-    gd.addNumericField("Area threshold", area_threshold, DUNITS,COL,"%");
-    gd.addChoice("Threshold",thresholds,thresh);
-    gd.addChoice("Wavelength",wls,wl);
-    gd.addCheckbox("Batch Mode",isBatch);
+    gd.addNumericField("Area threshold", area_threshold, DUNITS, COL, "%");
+    gd.addChoice("Threshold", thresholds, thresh);
+    gd.addChoice("Wavelength", wls, wl);
+    gd.addCheckbox("Batch Mode", isBatch);
+    gd.addCheckbox("Save intermediate images", saveIntermediate);
     gd.showDialog();
 
     start_slice = (int) gd.getNextNumber();
@@ -234,6 +252,7 @@ public class Bioact3_ implements PlugIn {
     thresh     = gd.getNextChoice();
     wl         = gd.getNextChoice();
     isBatch    = gd.getNextBoolean();
+    saveIntermediate = gd.getNextBoolean();
 
     if (gd.wasCanceled()) throw new RuntimeException(Macro.MACRO_CANCELED);
   }
@@ -249,4 +268,3 @@ public class Bioact3_ implements PlugIn {
         "position\twl\tslice\tmin.elapsed\texpTcorr_bs_intden\texptime.sec\tbs.intden\tmean_bg_intden\tmean_intden\trb_radius\tthreshold\tarea_threshold\tcellarea_percent\ttotal_area");
   }
 }
-
