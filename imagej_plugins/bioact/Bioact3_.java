@@ -31,7 +31,7 @@ public class Bioact3_ implements PlugIn {
   private double area_threshold = 50;
   private String wl = wls[1];
   private boolean isBatch = true;
-  private boolean saveIntermediate = false;
+  private boolean saveIntermediates = false;
 
   private RoiManager rm;
   private ImagePlus img;
@@ -46,7 +46,9 @@ public class Bioact3_ implements PlugIn {
 
   private File project_path;
   private File results_path;
+  private File intermediates_path;
   private final String results_name = "bioact_results.txt";
+  private final String intermediates_folder = "intermediates";
   private PrintWriter out;
 
   private int nSlices;
@@ -66,6 +68,12 @@ public class Bioact3_ implements PlugIn {
         }
 
         results_path = project_path;
+        intermediates_path = new File(project_path, intermediates_folder);
+
+        if (saveIntermediates) {
+            intermediates_path.mkdir();
+        }
+
         writeHeader();
 
         for (String pos : hce.getPositions()) {
@@ -204,21 +212,70 @@ public class Bioact3_ implements PlugIn {
 
   private void makeStackSelections(ImagePlus img) {
     img.setSlice(start_slice);
+
+    String img_name = "";
+    if (saveIntermediates) {
+        img_name = (new File(IJ.getDirectory("image"))).getParentFile().getName();
+    }
+
     IJ.run("Select None");
     IJ.run("Gaussian Blur...","sigma=1 stack");
+    if (saveIntermediates) {
+        IJ.saveAs("Tiff",
+               (new File(intermediates_path,
+                         img_name+"_blurred.tif")).toString());
+    }
+
     IJ.run("Subtract Background...", rb_stack);
+    if (saveIntermediates) {
+        IJ.saveAs("Tiff",
+               (new File(intermediates_path,
+                         img_name+"_subtracted.tif")).toString());
+    }
     //IJ.run("blah");
 
     IJ.run("8-bit");
+    if (saveIntermediates) {
+        IJ.saveAs("Tiff",
+               (new File(intermediates_path,
+                         img_name+"_8bit.tif")).toString());
+    }
+
     IJ.run("Maximum...", "radius=3 stack");
+    if (saveIntermediates) {
+        IJ.saveAs("Tiff",
+               (new File(intermediates_path,
+                         img_name+"_maximum.tif")).toString());
+    }
+
     IJ.setAutoThreshold(img, thresh+" dark");
+
     IJ.run("Convert to Mask"," black");
+    if (saveIntermediates) {
+        IJ.saveAs("Tiff",
+               (new File(intermediates_path,
+                         img_name+"_mask.tif")).toString());
+    }
+
     IJ.run("Fill Holes","stack");
+    if (saveIntermediates) {
+        IJ.saveAs("Tiff",
+               (new File(intermediates_path,
+                         img_name+"_mask_filled.tif")).toString());
+    }
+
     IJ.run("Options...", 
            "iterations=2 count=1 black edm=Overwrite do=Nothing");
+
     IJ.run("Dilate", "stack");
+    if (saveIntermediates) {
+        IJ.saveAs("Tiff",
+               (new File(intermediates_path,
+                         img_name+"_mask_dilated.tif")).toString());
+    }
     IJ.run("Options...",
            "iterations=1 count=1 black edm=Overwrite do=Nothing");
+
 
     selections = new Roi[nSlices];
     for (int i=1; i<=nSlices;i++) {
@@ -243,7 +300,7 @@ public class Bioact3_ implements PlugIn {
     gd.addChoice("Threshold", thresholds, thresh);
     gd.addChoice("Wavelength", wls, wl);
     gd.addCheckbox("Batch Mode", isBatch);
-    gd.addCheckbox("Save intermediate images", saveIntermediate);
+    gd.addCheckbox("Save intermediate images", saveIntermediates);
     gd.showDialog();
 
     start_slice = (int) gd.getNextNumber();
@@ -252,7 +309,7 @@ public class Bioact3_ implements PlugIn {
     thresh     = gd.getNextChoice();
     wl         = gd.getNextChoice();
     isBatch    = gd.getNextBoolean();
-    saveIntermediate = gd.getNextBoolean();
+    saveIntermediates = gd.getNextBoolean();
 
     if (gd.wasCanceled()) throw new RuntimeException(Macro.MACRO_CANCELED);
   }
